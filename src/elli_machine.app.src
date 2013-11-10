@@ -1,0 +1,11 @@
+{application, elli_machine,
+ [
+  {description, "Elli Machine, another flavour of webmachine."},
+  {vsn, "1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
