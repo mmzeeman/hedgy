@@ -1,6 +1,6 @@
 
 
--record(machine_reqdata, {
+-record(machine_req, {
     req :: elli:req(),
 
     host :: undefined | binary(),

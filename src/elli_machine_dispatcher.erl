@@ -31,35 +31,38 @@
 -author('Justin Sheehy <justin@basho.com>').
 -author('Bryan Fink <bryan@basho.com>').
 
+-author('Maas-Maarten Zeeman <mmzeeman@xs4all.nl>').
+
 -define(SEPARATOR, $\/).
 -define(MATCH_ALL, '*').
 
--export([dispatch/4]).
-
+-export([dispatch/2]).
 
 % @doc 
+-spec dispatch(ReqData :: elli_machine:req(), Args :: any()) -> {any(), any()}.
 dispatch(ReqData, Args) ->
-	DispatchList = proplists:get_value(dispatch_list, Args, []),
-	{dispatch(emr:host(ReqData), emr:path(ReqData), DispatchList), ReqData}.
+   DispatchList = proplists:get_value(dispatch_list, Args, []),
+   {dispatch(emr:host(ReqData), emr:path(ReqData), DispatchList), ReqData}.
 
 %% @spec dispatch(Host::string(), Path::string(),
 %%                DispatchList::[matchterm()]) ->
 %%         dispterm() | dispfail()
 %% @doc Interface for URL dispatching.
 %% See also http://bitbucket.org/justin/webmachine/wiki/DispatchConfiguration
-dispatch(Host, Path, DispatchList) ->
-	ExtraDepth = case lists:last(PathAsString) == ?SEPARATOR of
-		     true -> 1;
-		     _ -> 0
-		 end,
-    {Host, Port} = split_host_port(HostAsString),
-    try_host_binding(DispatchList, lists:reverse(Host), Port,
-                     Path, ExtraDepth).
+dispatch(HostAsBinary, Path, DispatchList) ->
+    %ExtraDepth = case lists:last(PathAsString) == ?SEPARATOR of
+    %    true -> 1;
+    %    _ -> 0
+    %end,
+    ExtraDepth = 1, %% Ignore the extra depth for now.
+    {Host, Port} = split_host_port(HostAsBinary),
 
-split_host_port(HostAsString) ->
-    case string:tokens(HostAsString, ":") of
+    try_host_binding(DispatchList, lists:reverse(Host), Port, Path, ExtraDepth).
+
+split_host_port(HostAsBinary) ->
+    case binary:split(HostAsBinary, <<$:>>) of
         [HostPart, PortPart] ->
-            {split_host(HostPart), list_to_integer(PortPart)};
+            {split_host(HostPart), list_to_integer(binary_to_list(PortPart))};
         [HostPart] ->
             {split_host(HostPart), 80};
         [] ->
@@ -67,8 +70,8 @@ split_host_port(HostAsString) ->
             {[], 80}
     end.
 
-split_host(HostAsString) ->
-    string:tokens(HostAsString, ".").
+split_host(Host) ->
+    binary:split(Host, <<".">>, [global]).
 
 %% @type matchterm() = hostmatchterm() | pathmatchterm().
 % The dispatch configuration is a list of these terms, and the
@@ -200,12 +203,72 @@ bind([Token|RestToken], [Token|RestMatch], Bindings, Depth) ->
 bind(_, _, _, _) ->
     fail.
 
-reconstitute([]) -> "";
-reconstitute(UnmatchedTokens) -> string:join(UnmatchedTokens, [?SEPARATOR]).
+reconstitute([]) -> 
+    <<>>;
+reconstitute(UnmatchedTokens) -> 
+    binary_join(UnmatchedTokens, <<?SEPARATOR>>).
 
-calculate_app_root(1) -> ".";
+calculate_app_root(1) -> <<".">>;
 calculate_app_root(N) when N > 1 ->
-    string:join(lists:duplicate(N, ".."), [?SEPARATOR]).
+    binary_join(lists:duplicate(N, <<"..">>), <<?SEPARATOR>>).
 
+binary_join(Binaries, Separator) ->
+    binary_join(Binaries, Separator, <<>>).
 
-	    
+binary_join([], _Separator, Acc) ->
+    Acc;
+binary_join([H|Rest], Separator, <<>>) ->
+    binary_join(Rest, Separator, <<H/binary>>);
+binary_join([H|Rest], Separator, Acc) ->
+    binary_join(Rest, Separator, <<Acc/binary, Separator/binary, H/binary>>).
+
+%%
+%% Tests
+%%
+
+-ifdef(TEST).
+
+-include_lib("eunit/include/eunit.hrl").
+
+binary_join_test() ->
+    ?assertEqual(<<>>, binary_join([], <<>>)),
+    ?assertEqual(<<"one">>, binary_join([<<"one">>], <<>>)),
+    ?assertEqual(<<"one/two">>, binary_join([<<"one">>, <<"two">>], <<$/>>)),
+    ok.
+
+split_host_test() ->
+    ?assertEqual([<<"example">>, <<"com">>], split_host(<<"example.com">>)),
+    ?assertEqual([<<"www">>, <<"example">>, <<"com">>], split_host(<<"www.example.com">>)),
+    ok.
+
+split_host_port_test() ->
+    ?assertEqual({[<<"example">>, <<"com">>], 80}, split_host_port(<<"example.com">>)),
+    ?assertEqual({[<<"example">>, <<"com">>], 8000}, split_host_port(<<"example.com:8000">>)),
+    ok.
+
+no_dispatch_match_test() ->
+    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>],80}, [<<"een">>,<<"twee">>]}, 
+        dispatch(<<"example.com">>, [<<"een">>, <<"twee">>], [])),
+    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, [<<"een">>]}, 
+        dispatch(<<"example.com:8000">>, [<<"een">>], [])),
+    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, []}, 
+        dispatch(<<"example.com:8000">>, [], [])),
+    ok.
+
+dispatch_match_test() ->
+    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<".">>, <<>>},
+        dispatch(<<"example.com:8000">>, [], [{[], controller_test, []}])),
+    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<"../..">>, <<>>},
+        dispatch(<<"example.com:8000">>, [<<"een">>], [{[<<"een">>], controller_test, []}])),
+    ok.
+
+another_test() ->
+    ?assertEqual({webmachine_demo_fs_resource, [{root,"/tmp/fs"}],
+             [<<"com">>,<<"example">>], 8000,
+             [<<"test.js">>],
+             [],<<"../../..">>,<<"test.js">>},
+        dispatch(<<"example.com:8000">>, [<<"fs">>, <<"test.js">>], [{[<<"fs">>, '*'], 
+            webmachine_demo_fs_resource, [{root, "/tmp/fs"}]} ])),
+    ok.
+
+-endif.

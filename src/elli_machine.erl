@@ -25,6 +25,9 @@
 
 -export([handle/2, handle_event/3]).
 
+-export_type([req/0]).
+-type req() :: record(machine_req).
+
 -behaviour(elli_handler).
 
 -record(machine_config, {
@@ -32,7 +35,6 @@
     dispatch_args :: any()
 }).
 
--type machine_reqdata() :: record(machine_reqdata).
 -type dispatcher() :: any().
 -type dispatcher_args() :: any().
 
@@ -66,7 +68,7 @@ handle_request(_, _) ->
     ignore.
 
 % @doc Find a matching controller for this request.
--spec dispatch(Rd :: machine_reqdata(), Config :: any()) -> any().
+-spec dispatch(Rd :: req(), Config :: any()) -> any().
 dispatch(Rd, Args) ->
     case application:get_env(?MODULE, dispatcher, elli_machine_dispatcher) of
         undefined -> 

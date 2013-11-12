@@ -19,35 +19,33 @@
 
 -module(emr).
 
+-include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export_type([machine_request/0]).
--type machine_req() :: record(machine_req).
-
 -export([
-	make_machine_req/1, 
-	path/1, 
-	raw_path/1, 
-	args/1
+    make_machine_req/1, 
+    path/1, 
+    raw_path/1, 
+    args/1
 ]).
 
 %%
 %% Api
 %%
 
--spec make_machine_req(elli:req()) -> machine_req().
+-spec make_machine_req(elli:req()) -> elli_machine:req().
 make_machine_req(Req) ->
-	Host = host(elli_request:headers(Req)),
-	#machine_req{req=Req, host=Host}.
+    Host = host(elli_request:headers(Req)),
+    #machine_req{req=Req, host=Host}.
 
-path(#machine_req{req=Req}) ->
-	elli_request:path(Req).
+path(#machine_req{req=Req}) -> 
+    Req#req.path.
 
-raw_path(#machine_req{req=Req}) ->
-	elli_request:raw_path(Req).
+raw_path(#machine_req{req=Req}) -> 
+    Req#req.raw_path.
 
-args(#machine_req{req=Req}) ->
-	elli_request:args(Req).
+args(#machine_req{req=Req}) -> 
+    Req#req.args.
 
 %%
 %% Helpers
