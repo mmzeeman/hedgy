@@ -121,13 +121,13 @@ decision_test(Test,TestVal,TrueFlow,FalseFlow, Controller, ReqData) ->
     case Test of
         {error, Reason} -> 
             error_response(Reason, Controller, ReqData);
-            {error, Reason0, Reason1} -> 
+        {error, Reason0, Reason1} -> 
             error_response({Reason0, Reason1}, Controller, ReqData);
-            {halt, Code} -> 
+        {halt, Code} -> 
             respond(Code, Controller, ReqData);
-            TestVal -> 
+        TestVal -> 
             decision_flow(TrueFlow, Test, Controller, ReqData);
-            _ -> 
+        _ -> 
             decision_flow(FalseFlow, Test, Controller, ReqData)
     end.
 

@@ -23,11 +23,15 @@
 
 -include_lib("elli/include/elli_util.hrl").
 
--export([host/1,
+-export([
+	host/1,
 
 	choose_media_type/2,
 	choose_charset/2,
-	choose_encoding/2
+	choose_encoding/2,
+
+	binary_join/2,
+	remove_whitespace/1
 ]).
 
 % @doc Return the hostname of the request, or undefined if no host can be found.
@@ -51,6 +55,7 @@ choose_media_type(Provided, AcceptHead) ->
     Requested = accept_header_to_media_types(AcceptHead),
     Prov1 = normalize_provided(Provided),
     choose_media_type1(Prov1, Requested).
+
 choose_media_type1(_Provided,[]) ->
     none;
 choose_media_type1(Provided, [H|T]) ->
@@ -287,7 +292,8 @@ binary_join([H|T], Sep, Acc) when is_binary(Sep) ->
 binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
 	binary_join(T, Sep, <<Acc/binary, Sep, H/binary>>).
 
-
+% @doc Remove whitespace from Bin
+-spec remove_whitespace(binary()) -> binary().
 remove_whitespace(Bin) ->
 	remove_whitespace(Bin, <<>>).
 
@@ -377,10 +383,29 @@ accept_header_to_media_types_test() ->
 		accept_header_to_media_types(<<"text/html,application/xml; q=.9, */*; q=0.2">>)),
 	?assertEqual([{1, <<"text/html">>, []}], 
 		accept_header_to_media_types(<<"text/html">>)),
-
 	?assertEqual([], 
 		accept_header_to_media_types(<<"text/html;q=wrong">>)),
-
 	ok.
+
+choose_media_type_test() ->
+    Provided = <<"text/html">>,
+    ShouldMatch = [<<"*">>, <<"*/*">>, <<"text/*">>, <<"text/html">>],
+    WantNone = [<<"foo">>, <<"text/xml">>, <<"application/*">>, <<"foo/bar/baz">>],
+    [?assertEqual(Provided, choose_media_type([Provided], I)) || I <- ShouldMatch ],
+    [?assertEqual(none, choose_media_type([Provided], I)) || I <- WantNone ],
+    ok.
+
+choose_media_type_qval_test() ->
+    Provided = [<<"text/html">>, <<"image/jpeg">>],
+    HtmlMatch = [<<"image/jpeg;q=0.5, text/html">>,
+                 <<"text/html, image/jpeg; q=0.5">>,
+                 <<"text/*; q=0.8, image/*;q=0.7">>,
+                 <<"text/*;q=.8, image/*;q=.7">>], %% strange FeedBurner format
+    JpgMatch = [<<"image/*;q=1, text/html;q=0.9">>,
+                <<"image/png, image/*;q=0.3">>],
+    [?assertEqual(<<"text/html">>, choose_media_type(Provided, I)) || I <- HtmlMatch ],
+    [?assertEqual(<<"image/jpeg">>, choose_media_type(Provided, I)) || I <- JpgMatch ],
+    ok.
+
 
 -endif.

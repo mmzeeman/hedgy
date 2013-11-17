@@ -33,6 +33,8 @@
 
 -author('Maas-Maarten Zeeman <mmzeeman@xs4all.nl>').
 
+-include_lib("elli/include/elli_util.hrl").
+
 -define(SEPARATOR, $\/).
 -define(MATCH_ALL, '*').
 
@@ -64,7 +66,7 @@ dispatch(HostAsBinary, Path, DispatchList) ->
 split_host_port(HostAsBinary) ->
     case binary:split(HostAsBinary, <<$:>>) of
         [HostPart, PortPart] ->
-            {split_host(HostPart), list_to_integer(binary_to_list(PortPart))};
+            {split_host(HostPart), ?b2i(PortPart)};
         [HostPart] ->
             {split_host(HostPart), 80};
         [] ->
@@ -174,11 +176,14 @@ try_host_binding([Dispatch|Rest], Host, Port, Path, Depth) ->
             try_host_binding(Rest, Host, Port, Path, Depth)
     end.
 
-bind_port(Port, Port, Bindings) -> {ok, Bindings};
-bind_port(?MATCH_ALL, _Port, Bindings) -> {ok, Bindings};
+bind_port(Port, Port, Bindings) -> 
+    {ok, Bindings};
+bind_port(?MATCH_ALL, _Port, Bindings) -> 
+    {ok, Bindings};
 bind_port(PortAtom, Port, Bindings) when is_atom(PortAtom) ->
     {ok, [{PortAtom, Port}|Bindings]};
-bind_port(_, _, _) -> fail.
+bind_port(_, _, _) -> 
+    fail.
 
 try_path_binding([], PathTokens, _, _) ->
     {no_dispatch_match, PathTokens};
@@ -208,21 +213,12 @@ bind(_, _, _, _) ->
 reconstitute([]) -> 
     <<>>;
 reconstitute(UnmatchedTokens) -> 
-    binary_join(UnmatchedTokens, <<?SEPARATOR>>).
+    elli_machine_util:binary_join(UnmatchedTokens, <<?SEPARATOR>>).
 
 calculate_app_root(1) -> <<".">>;
 calculate_app_root(N) when N > 1 ->
-    binary_join(lists:duplicate(N, <<"..">>), <<?SEPARATOR>>).
+    elli_machine_util:binary_join(lists:duplicate(N, <<"..">>), <<?SEPARATOR>>).
 
-binary_join(Binaries, Separator) ->
-    binary_join(Binaries, Separator, <<>>).
-
-binary_join([], _Separator, Acc) ->
-    Acc;
-binary_join([H|Rest], Separator, <<>>) ->
-    binary_join(Rest, Separator, <<H/binary>>);
-binary_join([H|Rest], Separator, Acc) ->
-    binary_join(Rest, Separator, <<Acc/binary, Separator/binary, H/binary>>).
 
 %%
 %% Tests
@@ -231,12 +227,6 @@ binary_join([H|Rest], Separator, Acc) ->
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
-
-binary_join_test() ->
-    ?assertEqual(<<>>, binary_join([], <<>>)),
-    ?assertEqual(<<"one">>, binary_join([<<"one">>], <<>>)),
-    ?assertEqual(<<"one/two">>, binary_join([<<"one">>, <<"two">>], <<$/>>)),
-    ok.
 
 split_host_test() ->
     ?assertEqual([<<"example">>, <<"com">>], split_host(<<"example.com">>)),
