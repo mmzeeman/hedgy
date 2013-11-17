@@ -56,6 +56,56 @@ choose_media_type(Provided, AcceptHead) ->
     Prov1 = normalize_provided(Provided),
     choose_media_type1(Prov1, Requested).
 
+% @doc Select a charset.
+choose_charset(CSets, AccCharHdr) -> 
+    do_choose(CSets, AccCharHdr, <<"ISO-8859-1">>).
+
+% @doc Select an encoding.
+choose_encoding(Encs, AccEncHdr) -> 
+    do_choose(Encs, AccEncHdr, <<"identity">>).
+
+% @doc Join the binary strings in the list with the sep
+-spec binary_join(list((binary())), integer() | binary()) -> binary().
+binary_join(List, Sep) ->
+    binary_join(List, Sep, <<>>).
+binary_join([], _Sep, Acc) ->
+    Acc;
+binary_join([H|T], Sep, <<>>) ->
+    binary_join(T, Sep, <<H/binary>>);
+binary_join([H|T], Sep, Acc) when is_binary(Sep) ->
+    binary_join(T, Sep, <<Acc/binary, Sep/binary, H/binary>>);
+binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
+    binary_join(T, Sep, <<Acc/binary, Sep, H/binary>>).
+
+% @doc Remove whitespace from Bin
+-spec remove_whitespace(binary()) -> binary().
+remove_whitespace(Bin) ->
+    remove_whitespace(Bin, <<>>).
+remove_whitespace(<<>>, Acc) ->
+    Acc;
+remove_whitespace(<<C, Rest/binary>>, Acc) when C =:= $\s; C =:= $\t; C =:= $\r; C =:= $\n ->
+    remove_whitespace(Rest, Acc);
+remove_whitespace(<<C, Rest/binary>>, Acc) ->
+    remove_whitespace(Rest, <<Acc/binary, C>>).
+
+
+%%
+%% Helpers
+%% 
+
+% @doc Return a prioritized list with host header values.
+host_headers([], Prio1, Prio2, Prio3) ->
+    [V || V <- [Prio1, Prio2, Prio3], V =/= undefined];
+host_headers([{<<"X-Forwarded-Host">>, ForwardedHost}|Rest], undefined, Prio2, Prio3) ->
+    host_headers(Rest, ForwardedHost, Prio2, Prio3);
+host_headers([{<<"X-Forwarded-Server">>, ForwardedServer}|Rest], Prio1, undefined, Prio3) ->
+    host_headers(Rest, Prio1, ForwardedServer, Prio3);
+host_headers([{<<"Host">>, Host}|Rest], Prio1, Prio2, undefined) ->
+    host_headers(Rest, Prio1, Prio2, Host);
+host_headers([_|Rest], Prio1, Prio2, Prio3) ->
+    host_headers(Rest, Prio1, Prio2, Prio3).
+
+
 choose_media_type1(_Provided,[]) ->
     none;
 choose_media_type1(Provided, [H|T]) ->
@@ -146,10 +196,9 @@ format_content_type(Type, []) ->
 format_content_type(Type, [H|T]) ->
     format_content_type(<<Type/binary, "; ", H/binary>>, T).
 
-choose_charset(CSets, AccCharHdr) -> 
-    do_choose(CSets, AccCharHdr, "ISO-8859-1").
-choose_encoding(Encs, AccEncHdr) -> 
-    do_choose(Encs, AccEncHdr, "identity").
+
+
+
 
 do_choose(Choices, Header, Default) ->
     Accepted = build_conneg_list(string:tokens(Header, ",")),
@@ -262,47 +311,6 @@ unescape_quoted_string([$" | Rest], Acc) ->        % Quote indicates end of this
 unescape_quoted_string([Char | Rest], Acc) ->
     unescape_quoted_string(Rest, [Char | Acc]).
 
-%%
-%% Helpers
-%% 
-
-% @doc Return a prioritized list with host header values.
-host_headers([], Prio1, Prio2, Prio3) ->
-    [V || V <- [Prio1, Prio2, Prio3], V =/= undefined];
-host_headers([{<<"X-Forwarded-Host">>, ForwardedHost}|Rest], undefined, Prio2, Prio3) ->
-    host_headers(Rest, ForwardedHost, Prio2, Prio3);
-host_headers([{<<"X-Forwarded-Server">>, ForwardedServer}|Rest], Prio1, undefined, Prio3) ->
-    host_headers(Rest, Prio1, ForwardedServer, Prio3);
-host_headers([{<<"Host">>, Host}|Rest], Prio1, Prio2, undefined) ->
-    host_headers(Rest, Prio1, Prio2, Host);
-host_headers([_|Rest], Prio1, Prio2, Prio3) ->
-    host_headers(Rest, Prio1, Prio2, Prio3).
-
-% @doc Join the binary strings in the list with the sep
--spec binary_join(list((binary())), integer() | binary()) -> binary().
-binary_join(List, Sep) ->
-    binary_join(List, Sep, <<>>).
-
-binary_join([], _Sep, Acc) ->
-    Acc;
-binary_join([H|T], Sep, <<>>) ->
-    binary_join(T, Sep, <<H/binary>>);
-binary_join([H|T], Sep, Acc) when is_binary(Sep) ->
-    binary_join(T, Sep, <<Acc/binary, Sep/binary, H/binary>>);
-binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
-    binary_join(T, Sep, <<Acc/binary, Sep, H/binary>>).
-
-% @doc Remove whitespace from Bin
--spec remove_whitespace(binary()) -> binary().
-remove_whitespace(Bin) ->
-    remove_whitespace(Bin, <<>>).
-
-remove_whitespace(<<>>, Acc) ->
-    Acc;
-remove_whitespace(<<C, Rest/binary>>, Acc) when C =:= $\s; C =:= $\t; C =:= $\r; C =:= $\n ->
-    remove_whitespace(Rest, Acc);
-remove_whitespace(<<C, Rest/binary>>, Acc) ->
-    remove_whitespace(Rest, <<Acc/binary, C>>).
 
 
 %%
