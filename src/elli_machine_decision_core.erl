@@ -205,7 +205,7 @@ decision(v3b8, Rs, Rd) ->
         {halt, Code}  ->
             respond(Code, Rs1, Rd1);
     AuthHead ->
-        RdAuth = wrq:set_resp_header(<<"WWW-Authenticate">>, AuthHead, Rd1),
+        RdAuth = emr:set_resp_header(<<"WWW-Authenticate">>, AuthHead, Rd1),
         respond(401, Rs1, RdAuth)
     end;
 %% "Forbidden?"
@@ -300,7 +300,7 @@ decision(v3f6, Rs, Rd) ->
                undefined -> <<"">>;
                CS -> <<"; charset=", CS/binary>>
            end,
-    Rd1 = wrq:set_resp_header(<<"Content-Type">>, <<CType/binary, CSet/binary>>, Rd),
+    Rd1 = emr:set_resp_header(<<"Content-Type">>, <<CType/binary, CSet/binary>>, Rd),
     case get_header_val(<<"Accept-Encoding">>, Rd1) of
         undefined -> decision_test(choose_encoding(<<"identity;q=1.0,*;q=0.5">>, Rs, Rd1), none, 406, v3g7);
         _ -> d(v3f7, Rs, Rd1)
@@ -314,7 +314,7 @@ decision(v3g7, Rs, Rd) ->
     {Variances, Rs1, Rd1} = variances(Rs, Rd),
     RdVar = case Variances of
         [] -> Rd1;
-        _ -> wrq:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
+        _ -> emr:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
     end,
     decision_test(controller_call(resource_exists, Rs1, RdVar), true, v3g8, v3h7);
 %% "If-Match exists?"
@@ -350,7 +350,7 @@ decision(v3i4, Rs, Rd) ->
     {MovedPermanently, Rs1, Rd1} = controller_call(moved_permanently, Rs, Rd),
     case MovedPermanently of
         {true, MovedURI} ->
-            RdLoc = wrq:set_resp_header(<<"Location">>, MovedURI, Rd1),
+            RdLoc = emr:set_resp_header(<<"Location">>, MovedURI, Rd1),
             respond(301, Rs1, RdLoc);
         false ->
             d(v3p3, Rs1, Rd1);
@@ -376,7 +376,7 @@ decision(v3k5, Rs, Rd) ->
     {MovedPermanently, Rs1, Rd1} = controller_call(moved_permanently, Rs, Rd),
     case MovedPermanently of
         {true, MovedURI} ->
-            RdLoc = wrq:set_resp_header(<<"Location">>, MovedURI, Rd1),
+            RdLoc = emr:set_resp_header(<<"Location">>, MovedURI, Rd1),
             respond(301, Rs1, RdLoc);
         false ->
             d(v3l5, Rs1, Rd1);
@@ -402,7 +402,7 @@ decision(v3l5, Rs, Rd) ->
     {MovedTemporarily, Rs1, Rd1} = controller_call(moved_temporarily, Rs, Rd),
     case MovedTemporarily of
         {true, MovedURI} ->
-            RdLoc = wrq:set_resp_header(<<"Location">>, MovedURI, Rd1),
+            RdLoc = emr:set_resp_header(<<"Location">>, MovedURI, Rd1),
             respond(307, Rs1, RdLoc);
         false ->
             d(v3m5, Rs1, Rd1);
@@ -469,17 +469,17 @@ decision(v3n11, Rs, Rd) ->
                             {BaseUri0, Rs3, Rd3} = controller_call(base_uri, Rs2, Rd2),
                             BaseUri = case BaseUri0 of
                                             undefined -> 
-                                                wrq:base_uri(Rd2);
+                                                emr:base_uri(Rd2);
                                             Any ->
                                                 case [lists:last(Any)] of
                                                     "/" -> lists:sublist(Any, erlang:length(Any) - 1);
                                                     _ -> Any
                                                  end
                                         end,
-                            FullPath = filename:join(["/", wrq:path(Rd3), NewPath]),
-                            RdPath = wrq:set_disp_path(FullPath, Rd3),
-                            RdLoc = case wrq:get_resp_header("Location", RdPath) of
-                                undefined -> wrq:set_resp_header("Location", BaseUri ++ FullPath, RdPath);
+                            FullPath = filename:join(["/", emr:path(Rd3), NewPath]),
+                            RdPath = emr:set_disp_path(FullPath, Rd3),
+                            RdLoc = case emr:get_resp_header("Location", RdPath) of
+                                undefined -> emr:set_resp_header("Location", BaseUri ++ FullPath, RdPath);
                                 _ -> RdPath
                             end,
 
@@ -553,19 +553,19 @@ decision(v3o18, Rs, Rd) ->
             {Etag, RsEtag, RdEtag0} = controller_call(generate_etag, Rs, Rd),
             RdEtag = case Etag of
                 undefined -> RdEtag0;
-                ETag -> wrq:set_resp_header(<<"ETag">>, ETag, RdEtag0)
+                ETag -> emr:set_resp_header(<<"ETag">>, ETag, RdEtag0)
             end,
 
             {LastModified, RsLM, RdLM0} = controller_call(last_modified, RsEtag, RdEtag),
             RdLM = case LastModified of
                 undefined -> RdLM0;
-                LM -> wrq:set_resp_header(<<"Last-Modified">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(LM)), RdLM0)
+                LM -> emr:set_resp_header(<<"Last-Modified">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(LM)), RdLM0)
             end,
 
             {Expires, RsExp, RdExp0} = controller_call(expires, RsLM, RdLM),
             RdExp = case Expires of
                 undefined -> RdExp0;
-                Exp -> wrq:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
+                Exp -> emr:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
             end,
 
             CT = emr:get_metadata('content-type', RdExp),
@@ -582,7 +582,7 @@ decision(v3o18, Rs, Rd) ->
         nop -> d(v3o18b, RsBody, RdBody);
         _ ->
             {EncodedBody, RsEB, RdEB} = encode_body(FinalBody, RsBody, RdBody), 
-            d(v3o18b, RsEB, wrq:set_resp_body(EncodedBody, RdEB))
+            d(v3o18b, RsEB, emr:set_resp_body(EncodedBody, RdEB))
     end;
 
 decision(v3o18b, Rs, Rd) ->
@@ -608,7 +608,7 @@ decision(v3p3, Rs, Rd) ->
 
 %% New controller?  (at this point boils down to "has location header")
 decision(v3p11, Rs, Rd) ->
-    case wrq:get_resp_header(<<"Location">>, Rd) of
+    case emr:get_resp_header(<<"Location">>, Rd) of
         undefined -> d(v3o20, Rs, Rd);
         _ -> respond(201, Rs, Rd)
     end.
@@ -639,9 +639,9 @@ accept_helper(Rs, Rd) ->
 encode_body_if_set(Rs, Rd) ->
     case webmachine_request:has_resp_body(Rd) of
         true ->
-            Body = wrq:resp_body(Rd),
+            Body = emr:resp_body(Rd),
             {Encoded, Rs1, Rd1} = encode_body(Body, Rs, Rd),
-            {true, Rs1, wrq:set_resp_body(Encoded, Rd1)};
+            {true, Rs1, emr:set_resp_body(Encoded, Rd1)};
         _ -> 
             {false, Rs, Rd}
     end.
@@ -692,7 +692,7 @@ choose_encoding(AccEncHdr, Rs, Rd) ->
         ChosenEnc ->
         RdEnc = case ChosenEnc of
             "identity" -> Rd1;
-            _ -> wrq:set_resp_header(<<"Content-Encoding">>, ChosenEnc, Rd1)
+            _ -> emr:set_resp_header(<<"Content-Encoding">>, ChosenEnc, Rd1)
         end,
         {ok, RdEnc1} = emr:set_metadata('content-encoding', ChosenEnc, RdEnc),
             {ChosenEnc, Rs1, RdEnc1}

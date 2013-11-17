@@ -53,7 +53,7 @@ get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
             elli_bstr:to_lower(Val)
     end.
 
-% @doc
+% @doc Sets metadata
 set_metadata('content-type', Val, ReqData) ->
     {ok, ReqData#machine_reqdata{'content-type' = Val}};
 set_metadata('content-encoding', Val, ReqData) ->
@@ -63,7 +63,7 @@ set_metadata('chosen-charset', Val, ReqData) ->
 set_metadata('mediaparams', Val, ReqData) ->
     {ok, ReqData#machine_reqdata{'mediaparams' = Val}}.
 
-% @doc
+% @doc Get metadata.
 get_metadata('content-type', ReqData) ->
     ReqData#machine_reqdata.'content-type';
 get_metadata('content-encoding', ReqData) ->

@@ -23,40 +23,48 @@
 -include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export([init/2, handle/2, handle_event/3]).
+-export([init/2, preprocess/2, handle/2, handle_event/3]).
 
 -export_type([reqdata/0]).
 -type reqdata() :: record(machine_reqdata).
 
 -behaviour(elli_handler).
 
+%
+% Webmachine like middleware for Elli.
+% 
+
+
 % @doc Initialize the request.
 %
-init(Req, Args) ->
-    {Mod, ModArgs} = proplists:get_value(dispatcher, Args),
+init(_Req, _Args) ->
+    ignore.
+    
+% @doc Preprocess the request, call the dispatcher and return our reqdata.
+%
+preprocess(Req, Args) ->
+    {Mod, ModArgs} = dispatcher(Args),
     case Mod:dispatch(Req, ModArgs) of
         {{no_dispatch_match, Host, PathSpec}, ReqData} ->
-            io:fwrite(standard_error, "no_match: ~p~n", [ModArgs]),
-            ignore;
+            ReqData;
         {{ControllerMod, ControllerOpts, 
           HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
             %% TODO -- fill the rest of the request data strucute.
             ReqData1 = ReqData#machine_reqdata{req=Req},
-
             io:fwrite(standard_error, "mod: ~p~n", [ControllerMod]),
-            {ok, standard, ReqData1#machine_reqdata{controller={ControllerMod, ControllerOpts}}}
+            ReqData1#machine_reqdata{controller={ControllerMod, ControllerOpts}}
     end.
 
-% @doc Handle a request.
+% @doc Handle the request.
 %
-handle(Req, #machine_reqdata{controller={Mod, ModOpts}}=ReqData) ->
+handle(#machine_reqdata{controller={Mod, ModOpts}}=ReqData, _Args) ->
     %% Initialize the controller.
+    io:fwrite(standard_error, "handle: ~p~n", [ReqData]),
+
     {ok, ControllerState} = elli_machine_controller:init(Mod, ModOpts),
 
     %% Call the decision core
     elli_machine_decision_core:handle_request({Mod, ControllerState}, ReqData),
-
-    io:fwrite(standard_error, "handle: ~p~n", [Req]),
 
     %% Stop 
     %% elli_machine_controller:stop(ControllerFinState, RequestData)
@@ -64,7 +72,7 @@ handle(Req, #machine_reqdata{controller={Mod, ModOpts}}=ReqData) ->
     %% Respond.
     ignore;
 
-handle(_,_) ->
+handle(_Req, Args) ->
     ignore.
             
     
@@ -93,5 +101,8 @@ handle_event(_Name, _EventArgs, _) -> ok.
 
 report(Name, Term) ->
     io:fwrite(standard_error, "~p: ~p~n", [Name, Term]).
+
+dispatcher(Args) ->
+    proplists:get_value(dispatcher, Args).
     
 
