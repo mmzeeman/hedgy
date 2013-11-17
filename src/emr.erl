@@ -26,7 +26,10 @@
     make_reqdata/1,
 
     method/1,
-    get_req_header_lc/2
+    get_req_header_lc/2,
+
+    set_metadata/3,
+    get_metadata/2
 ]).
 
 %%
@@ -44,8 +47,33 @@ method(#machine_reqdata{req=Req}) ->
 % @doc
 get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
     case elli_request:get_header(Header, Req) of
-        undefined ->
+        undefined -> 
             undefined;
         Val ->
             elli_bstr:to_lower(Val)
     end.
+
+% @doc
+set_metadata('content-type', Val, ReqData) ->
+    {ok, ReqData#machine_reqdata{'content-type' = Val}};
+set_metadata('content-encoding', Val, ReqData) ->
+    {ok, ReqData#machine_reqdata{'content-encoding' = Val}};
+set_metadata('chosen-charset', Val, ReqData) ->
+    {ok, ReqData#machine_reqdata{'chosen-charset' = Val}};
+set_metadata('mediaparams', Val, ReqData) ->
+    {ok, ReqData#machine_reqdata{'mediaparams' = Val}}.
+
+% @doc
+get_metadata('content-type', ReqData) ->
+    ReqData#machine_reqdata.'content-type';
+get_metadata('content-encoding', ReqData) ->
+    ReqData#machine_reqdata.'content-encoding';
+get_metadata('chosen-charset', ReqData) ->
+    ReqData#machine_reqdata.'chosen-charset';
+get_metadata('mediaparams', ReqData) ->
+    ReqData#machine_reqdata.'mediaparams'.
+
+
+
+
+

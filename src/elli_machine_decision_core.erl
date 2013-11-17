@@ -260,7 +260,7 @@ decision(v3c3, Rs, Rd) ->
     PTypes = [Type || {Type,_Fun} <- ContentTypes],
     case get_header_val(<<"Accept">>, Rd1) of
         undefined ->
-            {ok, RdCT} = webmachine_request:set_metadata('content-type', hd(PTypes), Rd1),
+            {ok, RdCT} = emr:set_metadata('content-type', hd(PTypes), Rd1),
             d(v3d4, Rs1, RdCT);
         _ ->
             d(v3c4, Rs1, Rd1)
@@ -274,7 +274,7 @@ decision(v3c4, Rs, Rd) ->
         none ->
             respond(406, Rs1, Rd1);
         MType ->
-            {ok, RdCT} = webmachine_request:set_metadata('Content-Type', MType, Rd1),
+            {ok, RdCT} = emr:set_metadata('content-type', MType, Rd1),
             d(v3d4, Rs, RdCT)
     end;
 %% Accept-Language exists?
@@ -286,7 +286,7 @@ decision(v3d5, Rs, Rd) ->
 %% Accept-Charset exists?
 decision(v3e5, Rs, Rd) ->
     case get_header_val(<<"Accept-Charset">>, Rd) of
-        undefined -> decision_test(choose_charset("*", Rs, Rd), none, 406, v3f6);
+        undefined -> decision_test(choose_charset(<<"*">>, Rs, Rd), none, 406, v3f6);
         _ -> d(v3e6, Rs, Rd)
     end;
 %% Acceptable Charset available?
@@ -295,14 +295,14 @@ decision(v3e6, Rs, Rd) ->
 %% Accept-Encoding exists?
 % (also, set content-type header here, now that charset is chosen)
 decision(v3f6, Rs, Rd) ->
-    CType = webmachine_request:get_metadata('content-type', Rd),
-    CSet = case webmachine_request:get_metadata('chosen-charset', Rd) of
-               undefined -> "";
-               CS -> "; charset=" ++ CS
+    CType = emr:get_metadata('content-type', Rd),
+    CSet = case emr:get_metadata('chosen-charset', Rd) of
+               undefined -> <<"">>;
+               CS -> <<"; charset=", CS/binary>>
            end,
-    Rd1 = wrq:set_resp_header(<<"Content-Type">>, CType ++ CSet, Rd),
+    Rd1 = wrq:set_resp_header(<<"Content-Type">>, <<CType/binary, CSet/binary>>, Rd),
     case get_header_val(<<"Accept-Encoding">>, Rd1) of
-        undefined -> decision_test(choose_encoding("identity;q=1.0,*;q=0.5", Rs, Rd1), none, 406, v3g7);
+        undefined -> decision_test(choose_encoding(<<"identity;q=1.0,*;q=0.5">>, Rs, Rd1), none, 406, v3g7);
         _ -> d(v3f7, Rs, Rd1)
     end;
 %% Acceptable encoding available?
@@ -314,7 +314,7 @@ decision(v3g7, Rs, Rd) ->
     {Variances, Rs1, Rd1} = variances(Rs, Rd),
     RdVar = case Variances of
         [] -> Rd1;
-        _ -> wrq:set_resp_header(<<"Vary">>, string:join(Variances, ", "), Rd1)
+        _ -> wrq:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
     end,
     decision_test(controller_call(resource_exists, Rs1, RdVar), true, v3g8, v3h7);
 %% "If-Match exists?"
@@ -322,7 +322,7 @@ decision(v3g8, Rs, Rd) ->
     decision_test(get_header_val(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
 %% "If-Match: * exists"
 decision(v3g9, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Match">>, Rd), "*", v3h10, v3g11, Rs, Rd);
+    decision_test(get_header_val(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(get_header_val(<<"If-Match">>, Rd)),
@@ -331,7 +331,7 @@ decision(v3g11, Rs, Rd) ->
                      v3h10, 412);
 %% "If-Match: * exists"
 decision(v3h7, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Match">>, Rd), "*", 412, v3i7, Rs, Rd);
+    decision_test(get_header_val(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
 %% "If-unmodified-since exists?"
 decision(v3h10, Rs, Rd) ->
     decision_test(get_header_val(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
@@ -367,7 +367,7 @@ decision(v3i12, Rs, Rd) ->
     decision_test(get_header_val(<<"If-None-Match">>, Rd), undefined, v3l13, v3i13, Rs, Rd);
 %% "If-None-Match: * exists?"
 decision(v3i13, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-None-Match">>, Rd), "*", v3j18, v3k13, Rs, Rd);
+    decision_test(get_header_val(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
 %% GET or HEAD?
 decision(v3j18, Rs, Rd) ->
     decision_test(lists:member(method(Rd),['GET','HEAD']), true, 304, 412, Rs, Rd);
@@ -505,9 +505,9 @@ decision(v3n11, Rs, Rd) ->
     end,
     case Stage1 of
         stage1_ok ->
-            case wrq:resp_redirect(RdStage1) of
+            case emr:resp_redirect(RdStage1) of
                 true ->
-                    case wrq:get_resp_header("Location", RdStage1) of
+                    case emr:get_resp_header(<<"Location">>, RdStage1) of
                         undefined ->
                             respond(500, "Response had do_redirect but no Location", RsStage1, RdStage1);
                         _ ->
@@ -568,7 +568,7 @@ decision(v3o18, Rs, Rd) ->
                 Exp -> wrq:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
             end,
 
-            CT = webmachine_request:get_metadata('content-type', RdExp),
+            CT = emr:get_metadata('content-type', RdExp),
             {ContentTypesProvided, RsCT, RdCT} = controller_call(content_types_provided, RsExp, RdExp),
             F = hd([Fun || {Type,Fun} <- ContentTypesProvided, CT =:= Type]),
             controller_call(F, RsCT, RdCT);
@@ -619,7 +619,7 @@ accept_helper(Rs, Rd) ->
              Other -> Other
          end,
     {MT, MParams} = elli_machine_util:media_type_to_detail(CT),
-    {ok, RdMParams} = webmachine_request:set_metadata('mediaparams', MParams, Rd),
+    {ok, RdMParams} = emr:set_metadata('mediaparams', MParams, Rd),
     {ContentTypesAccepted, Rs1, Rd1} = controller_call(content_types_accepted, Rs, RdMParams),
     case [Fun || {Type,Fun} <- ContentTypesAccepted, MT =:= Type] of
         [] -> 
@@ -647,14 +647,14 @@ encode_body_if_set(Rs, Rd) ->
     end.
 
 encode_body(Body, Rs, Rd) ->
-    ChosenCSet = webmachine_request:get_metadata('chosen-charset', Rd),
+    ChosenCSet = emr:get_metadata('chosen-charset', Rd),
     {CharSetsProvided, Rs1, Rd1} = controller_call(charsets_provided, Rs, Rd),
     Charsetter = 
         case CharSetsProvided of
             no_charset -> fun(X) -> X end;
             CP -> hd([Fun || {CSet,Fun} <- CP, ChosenCSet =:= CSet])
         end,
-    ChosenEnc = webmachine_request:get_metadata('content-encoding', Rd1),
+    ChosenEnc = emr:get_metadata('content-encoding', Rd1),
     {EncodingsProvided, Rs2, Rd2} = controller_call(encodings_provided, Rs1, Rd1),
     Encoder = hd([Fun || {Enc,Fun} <- EncodingsProvided, ChosenEnc =:= Enc]),
     case Body of
@@ -692,9 +692,9 @@ choose_encoding(AccEncHdr, Rs, Rd) ->
         ChosenEnc ->
         RdEnc = case ChosenEnc of
             "identity" -> Rd1;
-            _ -> wrq:set_resp_header(<<"Content-Encoding">>,ChosenEnc, Rd1)
+            _ -> wrq:set_resp_header(<<"Content-Encoding">>, ChosenEnc, Rd1)
         end,
-        {ok, RdEnc1} = webmachine_request:set_metadata('content-encoding',ChosenEnc,RdEnc),
+        {ok, RdEnc1} = emr:set_metadata('content-encoding', ChosenEnc, RdEnc),
             {ChosenEnc, Rs1, RdEnc1}
     end.
 
@@ -709,7 +709,7 @@ choose_charset(AccCharHdr, Rs, Rd) ->
                 none -> 
                     {none, Rs1, Rd1};
                 Charset ->
-                    {ok, RdCSet} = webmachine_request:set_metadata('chosen-charset', Charset, Rd1),
+                    {ok, RdCSet} = emr:set_metadata('chosen-charset', Charset, Rd1),
                     {Charset, Rs1, RdCSet}
             end
     end.
@@ -736,13 +736,13 @@ variances(Rs, Rd) ->
     Accept = case length(ContentTypesProvided) of
         1 -> [];
         0 -> [];
-        _ -> ["Accept"]
+        _ -> [<<"Accept">>]
     end,
     {EncodingsProvided, Rs2, Rd2} = controller_call(encodings_provided, Rs1, Rd1),
     AcceptEncoding = case length(EncodingsProvided) of
         1 -> [];
         0 -> [];
-        _ -> ["Accept-Encoding"]
+        _ -> [<<"Accept-Encoding">>]
     end,
     {CharsetsProvided, Rs3, Rd3} = controller_call(charsets_provided, Rs2, Rd2),
     AcceptCharset = case CharsetsProvided of
@@ -752,7 +752,7 @@ variances(Rs, Rd) ->
             case length(CP) of
                 1 -> [];
                 0 -> [];
-                _ -> ["Accept-Charset"]
+                _ -> [<<"Accept-Charset">>]
             end
     end,
     {Variances, Rs4, Rd4} = controller_call(variances, Rs3, Rd3),
