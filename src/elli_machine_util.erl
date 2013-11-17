@@ -24,14 +24,14 @@
 -include_lib("elli/include/elli_util.hrl").
 
 -export([
-	host/1,
+    host/1,
 
-	choose_media_type/2,
-	choose_charset/2,
-	choose_encoding/2,
+    choose_media_type/2,
+    choose_charset/2,
+    choose_encoding/2,
 
-	binary_join/2,
-	remove_whitespace/1
+    binary_join/2,
+    remove_whitespace/1
 ]).
 
 % @doc Return the hostname of the request, or undefined if no host can be found.
@@ -112,16 +112,16 @@ prioritize_media(Type,Params,Acc) ->
 
 -spec qval(binary()) -> number().
 qval(<<"1">>) -> 
-	1;
+    1;
 qval(<<$., Val/binary>>) ->
-	list_to_float([$0, $. | binary_to_list(Val)]);
+    list_to_float([$0, $. | binary_to_list(Val)]);
 qval(Val) ->
-	list_to_float(binary_to_list(Val)).
+    list_to_float(binary_to_list(Val)).
 
 media_type_to_detail(MType) ->
     [CType|Params] = binary:split(remove_whitespace(MType), <<$;>>, [global]),
     MParams = [list_to_tuple([KV || KV <- binary:split(X, <<$=>>), KV=/=<<>>]) 
-    	|| X <- Params, X=/=<<>>],
+        || X <- Params, X=/=<<>>],
     {CType, MParams}.                       
 
 accept_header_to_media_types(HeadVal) ->
@@ -137,19 +137,19 @@ accept_header_to_media_types(HeadVal) ->
 normalize_provided(Provided) ->
     [normalize_provided1(X) || X <- Provided].
 normalize_provided1(Type) when is_binary(Type) -> 
-	{Type, []};
+    {Type, []};
 normalize_provided1({Type,Params}) -> 
-	{Type, Params}.
+    {Type, Params}.
 
 format_content_type(Type, []) -> 
-	Type;
+    Type;
 format_content_type(Type, [H|T]) ->
-	format_content_type(<<Type/binary, "; ", H/binary>>, T).
+    format_content_type(<<Type/binary, "; ", H/binary>>, T).
 
 choose_charset(CSets, AccCharHdr) -> 
-	do_choose(CSets, AccCharHdr, "ISO-8859-1").
+    do_choose(CSets, AccCharHdr, "ISO-8859-1").
 choose_encoding(Encs, AccEncHdr) -> 
-	do_choose(Encs, AccEncHdr, "identity").
+    do_choose(Encs, AccEncHdr, "identity").
 
 do_choose(Choices, Header, Default) ->
     Accepted = build_conneg_list(string:tokens(Header, ",")),
@@ -281,28 +281,28 @@ host_headers([_|Rest], Prio1, Prio2, Prio3) ->
 % @doc Join the binary strings in the list with the sep
 -spec binary_join(list((binary())), integer() | binary()) -> binary().
 binary_join(List, Sep) ->
-	binary_join(List, Sep, <<>>).
+    binary_join(List, Sep, <<>>).
 
 binary_join([], _Sep, Acc) ->
-	Acc;
+    Acc;
 binary_join([H|T], Sep, <<>>) ->
-	binary_join(T, Sep, <<H/binary>>);
+    binary_join(T, Sep, <<H/binary>>);
 binary_join([H|T], Sep, Acc) when is_binary(Sep) ->
-	binary_join(T, Sep, <<Acc/binary, Sep/binary, H/binary>>);
+    binary_join(T, Sep, <<Acc/binary, Sep/binary, H/binary>>);
 binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
-	binary_join(T, Sep, <<Acc/binary, Sep, H/binary>>).
+    binary_join(T, Sep, <<Acc/binary, Sep, H/binary>>).
 
 % @doc Remove whitespace from Bin
 -spec remove_whitespace(binary()) -> binary().
 remove_whitespace(Bin) ->
-	remove_whitespace(Bin, <<>>).
+    remove_whitespace(Bin, <<>>).
 
 remove_whitespace(<<>>, Acc) ->
-	Acc;
+    Acc;
 remove_whitespace(<<C, Rest/binary>>, Acc) when C =:= $\s; C =:= $\t; C =:= $\r; C =:= $\n ->
-	remove_whitespace(Rest, Acc);
+    remove_whitespace(Rest, Acc);
 remove_whitespace(<<C, Rest/binary>>, Acc) ->
-	remove_whitespace(Rest, <<Acc/binary, C>>).
+    remove_whitespace(Rest, <<Acc/binary, C>>).
 
 
 %%
@@ -332,60 +332,60 @@ host_test() ->
     ok.
 
 format_content_type_test() ->
-	?assertEqual(<<"text/html">>, format_content_type(<<"text/html">>, [])),
-	?assertEqual(<<"text/html; foo">>, format_content_type(<<"text/html">>, [<<"foo">>])),
-	?assertEqual(<<"text/html; foo; bar">>, format_content_type(<<"text/html">>, [<<"foo">>, <<"bar">>])),
-	ok.
+    ?assertEqual(<<"text/html">>, format_content_type(<<"text/html">>, [])),
+    ?assertEqual(<<"text/html; foo">>, format_content_type(<<"text/html">>, [<<"foo">>])),
+    ?assertEqual(<<"text/html; foo; bar">>, format_content_type(<<"text/html">>, [<<"foo">>, <<"bar">>])),
+    ok.
 
 binary_join_test() ->
-	?assertEqual(<<>>, binary_join([], $.)),
-	?assertEqual(<<>>, binary_join([], <<". ">>)),
-	?assertEqual(<<"een">>, binary_join([<<"een">>], <<", ">>)),
-	?assertEqual(<<"een, twee">>, binary_join([<<"een">>, <<"twee">>], <<", ">>)),
-	?assertEqual(<<"een, twee, drie">>, binary_join([<<"een">>, <<"twee">>, <<"drie">>], <<", ">>)),
-	?assertEqual(<<"een,twee,drie">>, binary_join([<<"een">>, <<"twee">>, <<"drie">>], $,)),
-	ok.
+    ?assertEqual(<<>>, binary_join([], $.)),
+    ?assertEqual(<<>>, binary_join([], <<". ">>)),
+    ?assertEqual(<<"een">>, binary_join([<<"een">>], <<", ">>)),
+    ?assertEqual(<<"een, twee">>, binary_join([<<"een">>, <<"twee">>], <<", ">>)),
+    ?assertEqual(<<"een, twee, drie">>, binary_join([<<"een">>, <<"twee">>, <<"drie">>], <<", ">>)),
+    ?assertEqual(<<"een,twee,drie">>, binary_join([<<"een">>, <<"twee">>, <<"drie">>], $,)),
+    ok.
 
 remove_whitespace_test() ->
-	?assertEqual(<<"test">>, remove_whitespace(<<"t e s t">>)),
-	?assertEqual(<<"">>, remove_whitespace(<<"   ">>)),
-	?assertEqual(<<"">>, remove_whitespace(<<"">>)),
-	ok.
+    ?assertEqual(<<"test">>, remove_whitespace(<<"t e s t">>)),
+    ?assertEqual(<<"">>, remove_whitespace(<<"   ">>)),
+    ?assertEqual(<<"">>, remove_whitespace(<<"">>)),
+    ok.
 
 media_type_to_detail_test() ->
-	?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}]}, 
-		media_type_to_detail(<<"application/xml;q=0.9">>)),
-	?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}]}, 
-		media_type_to_detail(<<"application/xml ; q = 0.9 ">>)),
-	?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}, {<<"x">>, <<"1">>}]}, 
-		media_type_to_detail(<<"application/xml ;;; q = 0.9 ; x=1">>)),
-	?assertEqual({<<"application/xml">>, [{<<"foo">>}, {<<"bar">>}]}, 
-		media_type_to_detail(<<"application/xml;foo;bar">>)),
-	?assertEqual({<<"application/xml">>, [{<<"foo">>}, {<<"bar">>}]}, 
-		media_type_to_detail(<<"application/xml;foo;bar;;;;;">>)),
-	ok.
+    ?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}]}, 
+        media_type_to_detail(<<"application/xml;q=0.9">>)),
+    ?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}]}, 
+        media_type_to_detail(<<"application/xml ; q = 0.9 ">>)),
+    ?assertEqual({<<"application/xml">>, [{<<"q">>,<<"0.9">>}, {<<"x">>, <<"1">>}]}, 
+        media_type_to_detail(<<"application/xml ;;; q = 0.9 ; x=1">>)),
+    ?assertEqual({<<"application/xml">>, [{<<"foo">>}, {<<"bar">>}]}, 
+        media_type_to_detail(<<"application/xml;foo;bar">>)),
+    ?assertEqual({<<"application/xml">>, [{<<"foo">>}, {<<"bar">>}]}, 
+        media_type_to_detail(<<"application/xml;foo;bar;;;;;">>)),
+    ok.
 
 qval_test() ->
-	?assertEqual(0.8, qval(<<"0.8">>)),
-	?assertEqual(0.8, qval(<<".8">>)),
-	?assertEqual(1, qval(<<"1">>)),
-	ok.
+    ?assertEqual(0.8, qval(<<"0.8">>)),
+    ?assertEqual(0.8, qval(<<".8">>)),
+    ?assertEqual(1, qval(<<"1">>)),
+    ok.
 
 accept_header_to_media_types_test() ->
-	?assertEqual([{1, <<"application/xhtml+xml">>, []},
+    ?assertEqual([{1, <<"application/xhtml+xml">>, []},
                   {1, <<"text/html">>, []},
                   {0.9, <<"application/xml">>, []},
                   {0.8, <<"*/*">>, []}], 
-		accept_header_to_media_types(<<"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8">>)),
-	?assertEqual([{1, <<"text/html">>, []},
+        accept_header_to_media_types(<<"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8">>)),
+    ?assertEqual([{1, <<"text/html">>, []},
                   {0.9, <<"application/xml">>, []},
                   {0.2, <<"*/*">>, []}], 
-		accept_header_to_media_types(<<"text/html,application/xml; q=.9, */*; q=0.2">>)),
-	?assertEqual([{1, <<"text/html">>, []}], 
-		accept_header_to_media_types(<<"text/html">>)),
-	?assertEqual([], 
-		accept_header_to_media_types(<<"text/html;q=wrong">>)),
-	ok.
+        accept_header_to_media_types(<<"text/html,application/xml; q=.9, */*; q=0.2">>)),
+    ?assertEqual([{1, <<"text/html">>, []}], 
+        accept_header_to_media_types(<<"text/html">>)),
+    ?assertEqual([], 
+        accept_header_to_media_types(<<"text/html;q=wrong">>)),
+    ok.
 
 choose_media_type_test() ->
     Provided = <<"text/html">>,
