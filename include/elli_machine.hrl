@@ -1,10 +1,14 @@
 
 
--record(machine_req, {
-    req :: elli:req(),
+-record(machine_reqdata, {
+	host :: undefined | binary(),
 
-    host :: undefined | binary(),
+    cache = [],
 
-    resp_headers = [],
-    resp_body = <<>>
+    resp_headers = [], 
+    resp_body = <<>> :: binary() | iolist(),
+
+    controller, 
+    req :: undefined | elli:req()
 }).
+

@@ -39,10 +39,12 @@
 -export([dispatch/2]).
 
 % @doc 
--spec dispatch(ReqData :: elli_machine:req(), Args :: any()) -> {any(), any()}.
-dispatch(ReqData, Args) ->
+-spec dispatch(Req :: elli:req(), Args :: any()) -> {any(), any()}.
+dispatch(Req, Args) ->
    DispatchList = proplists:get_value(dispatch_list, Args, []),
-   {dispatch(emr:host(ReqData), emr:path(ReqData), DispatchList), ReqData}.
+   Host = elli_machine_util:host(elli_request:headers(Req)),
+   ReqData = emr:make_reqdata(Host),
+   {dispatch(Host, elli_request:path(Req), DispatchList), ReqData}.
 
 %% @spec dispatch(Host::string(), Path::string(),
 %%                DispatchList::[matchterm()]) ->

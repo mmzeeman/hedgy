@@ -1,5 +1,5 @@
 %% @author Maas-Maarten Zeeman <mmzeeman@xs4all.nl>
-%% @copyright 2012, 2013 Maas-Maarten Zeeman
+%% @copyright 2013 Maas-Maarten Zeeman
 %%
 %% @doc Elli Machine 
 %%
@@ -23,38 +23,66 @@
 -include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export([handle/2, handle_event/3]).
+-export([init/2, handle/2, handle_event/3]).
 
--export_type([req/0]).
--type req() :: record(machine_req).
+-export_type([reqdata/0]).
+-type reqdata() :: record(machine_reqdata).
 
 -behaviour(elli_handler).
 
--record(machine_config, {
-    dispatcher :: module(),
-    dispatch_args :: any()
-}).
+% @doc Initialize the request.
+%
+init(Req, Args) ->
+    {Mod, ModArgs} = proplists:get_value(dispatcher, Args),
+    case Mod:dispatch(Req, ModArgs) of
+        {{no_dispatch_match, Host, PathSpec}, ReqData} ->
+            io:fwrite(standard_error, "no_match: ~p~n", [ModArgs]),
+            ignore;
+        {{ControllerMod, ControllerOpts, 
+          HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
+            %% TODO -- fill the rest of the request data strucute.
+            ReqData1 = ReqData#machine_reqdata{req=Req},
 
--type dispatcher() :: any().
--type dispatcher_args() :: any().
+            io:fwrite(standard_error, "mod: ~p~n", [ControllerMod]),
+            {ok, standard, ReqData1#machine_reqdata{controller={ControllerMod, ControllerOpts}}}
+    end.
 
 % @doc Handle a request.
 %
-handle(Req, Args) ->
-    ReqData = emr:make_machine_req(Req),
-    {Dispatch, DispatchArgs} = dispatch(ReqData, Args),
-    handle_request(Dispatch, DispatchArgs).
+handle(Req, #machine_reqdata{controller={Mod, ModOpts}}=ReqData) ->
+    %% Initialize the controller.
+    {ok, ControllerState} = elli_machine_controller:init(Mod, ModOpts),
 
+    %% Call the decision core
+    elli_machine_decision_core:handle_request({Mod, ControllerState}, ReqData),
+
+    io:fwrite(standard_error, "handle: ~p~n", [Req]),
+
+    %% Stop 
+    %% elli_machine_controller:stop(ControllerFinState, RequestData)
+
+    %% Respond.
+    ignore;
+
+handle(_,_) ->
+    ignore.
+            
+    
 % @doc Handle event
 %
 handle_event(elli_startup, [], Config) ->
-   % elli_machine_server:start_link(Config),
    ok; 
 
 % Errors during request handlers
-handle_event(request_throw, [_Request, _Exception, _Stacktrace], _) -> ok;
-handle_event(request_error, [_Request, _Exception, _Stacktrace], _) -> ok;
-handle_event(request_exit, [_Request, _Exception, _Stacktrace], _) -> ok;
+handle_event(request_throw, [_Request, _Exception, _Stacktrace]=E, _) ->
+    report(request_throw, E),
+    ok;
+handle_event(request_error, [_Request, _Exception, _Stacktrace]=E, _) -> 
+    report(request_error, E),
+    ok;
+handle_event(request_exit, [_Request, _Exception, _Stacktrace]=E, _) -> 
+    report(request_exit, E),
+    ok;
 
 % Other events.
 handle_event(_Name, _EventArgs, _) -> ok.
@@ -63,16 +91,7 @@ handle_event(_Name, _EventArgs, _) -> ok.
 %% Helpers
 %%
 
--spec handle_request(dispatcher(), dispatcher_args()) -> ignore.  
-handle_request(_, _) ->
-    ignore.
+report(Name, Term) ->
+    io:fwrite(standard_error, "~p: ~p~n", [Name, Term]).
+    
 
-% @doc Find a matching controller for this request.
--spec dispatch(Rd :: req(), Config :: any()) -> any().
-dispatch(Rd, Args) ->
-    case application:get_env(?MODULE, dispatcher, elli_machine_dispatcher) of
-        undefined -> 
-            elli_machine_dispatcher:dispatch(Rd, Args);
-        Dispatcher ->
-            Dispatcher:dispatch(Rd, Args)
-    end.
