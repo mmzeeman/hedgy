@@ -57,11 +57,13 @@ choose_media_type(Provided, AcceptHead) ->
     choose_media_type1(Prov1, Requested).
 
 % @doc Select a charset.
-choose_charset(CSets, AccCharHdr) -> 
+choose_charset(CSets, AccCharHdr) ->
+    io:fwrite(standard_error, "choose_charset: ~p, ~p~n", [CSets, AccCharHdr]),
     do_choose(CSets, AccCharHdr, <<"ISO-8859-1">>).
 
 % @doc Select an encoding.
-choose_encoding(Encs, AccEncHdr) -> 
+choose_encoding(Encs, AccEncHdr) ->
+    io:fwrite(standard_error, "choose_encoding: ~p, ~p~n", [Encs, AccEncHdr]),
     do_choose(Encs, AccEncHdr, <<"identity">>).
 
 % @doc Join the binary strings in the list with the sep
@@ -413,6 +415,10 @@ choose_media_type_qval_test() ->
                 <<"image/png, image/*;q=0.3">>],
     [?assertEqual(<<"text/html">>, choose_media_type(Provided, I)) || I <- HtmlMatch ],
     [?assertEqual(<<"image/jpeg">>, choose_media_type(Provided, I)) || I <- JpgMatch ],
+    ok.
+
+choose_encoding_test() ->
+    ?assertEqual(<<>>, choose_encoding([<<"identity">>], <<"gzip, deflate">>)),
     ok.
 
 

@@ -28,6 +28,7 @@
     method/1,
     get_req_header_lc/2,
 
+    set_resp_header/3,
     set_metadata/3,
     get_metadata/2
 ]).
@@ -52,6 +53,10 @@ get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
         Val ->
             elli_bstr:to_lower(Val)
     end.
+
+set_resp_header(Header, Value, #machine_reqdata{resp_headers=RespHeaders}=ReqData) ->
+    ReqData#machine_reqdata{resp_headers=[{Header, Value}|RespHeaders]}.
+
 
 % @doc Sets metadata
 set_metadata('content-type', Val, ReqData) ->

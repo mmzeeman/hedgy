@@ -51,20 +51,15 @@ preprocess(Req, Args) ->
           HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
             %% TODO -- fill the rest of the request data strucute.
             ReqData1 = ReqData#machine_reqdata{req=Req},
-            io:fwrite(standard_error, "mod: ~p~n", [ControllerMod]),
-            ReqData1#machine_reqdata{controller={ControllerMod, ControllerOpts}}
+            {ok, ControllerState} = elli_machine_controller:init(ControllerMod, ControllerOpts),
+            ReqData1#machine_reqdata{controller={ControllerMod, ControllerState}}
     end.
 
 % @doc Handle the request.
 %
-handle(#machine_reqdata{controller={Mod, ModOpts}}=ReqData, _Args) ->
-    %% Initialize the controller.
-    io:fwrite(standard_error, "handle: ~p~n", [ReqData]),
-
-    {ok, ControllerState} = elli_machine_controller:init(Mod, ModOpts),
-
+handle(#machine_reqdata{controller=Controller}=ReqData, _Args) ->
     %% Call the decision core
-    elli_machine_decision_core:handle_request({Mod, ControllerState}, ReqData),
+    elli_machine_decision_core:handle_request(Controller, ReqData),
 
     %% Stop 
     %% elli_machine_controller:stop(ControllerFinState, RequestData)
