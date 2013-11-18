@@ -615,7 +615,7 @@ decision(v3p11, Rs, Rd) ->
 
 accept_helper(Rs, Rd) ->
     CT = case get_header_val(<<"Content-Type">>, Rd) of
-             undefined -> "application/octet-stream";
+             undefined -> <<"application/octet-stream">>;
              Other -> Other
          end,
     {MT, MParams} = elli_machine_util:media_type_to_detail(CT),
@@ -760,8 +760,6 @@ variances(Rs, Rd) ->
     
     
 contains_token(Token, HeaderString) ->
-    Tokens = lists:map(fun (T) ->
-                               string:strip(string:to_lower(T))
-                       end,
-                       string:tokens(HeaderString, ",")),
+    NoWsHeaderString = elli_machine_util:remove_whitespace(HeaderString),
+    Tokens = binary:split(NoWsHeaderString, <<",">>, [global]),
     lists:member(Token, Tokens).

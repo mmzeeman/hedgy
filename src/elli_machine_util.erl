@@ -36,6 +36,8 @@
 
 % @doc Return the hostname of the request, or undefined if no host can be found.
 -spec host(Headers :: elli:headers()) -> undefined | binary().
+host(undefined) ->
+    undefined;
 host(Headers) ->
     case host_headers(Headers, undefined, undefined, undefined) of
         [] -> undefined;
@@ -320,6 +322,7 @@ unescape_quoted_string([Char | Rest], Acc) ->
 -include_lib("eunit/include/eunit.hrl").
 
 host_test() ->
+    ?assertEqual(undefined, host(undefined)),
     ?assertEqual(undefined, host([])),
 
     ?assertEqual(<<"example.com">>, host([{<<"Host">>, <<"example.com">>}])),

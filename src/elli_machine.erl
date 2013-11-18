@@ -23,7 +23,7 @@
 -include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export([init/2, preprocess/2, handle/2, handle_event/3]).
+-export([preprocess/2, handle/2, handle_event/3]).
 
 -export_type([reqdata/0]).
 -type reqdata() :: record(machine_reqdata).
@@ -33,12 +33,6 @@
 %
 % Webmachine like middleware for Elli.
 % 
-
-
-% @doc Initialize the request.
-%
-init(_Req, _Args) ->
-    ignore.
     
 % @doc Preprocess the request, call the dispatcher and return our reqdata.
 %
@@ -59,20 +53,19 @@ preprocess(Req, Args) ->
 %
 handle(#machine_reqdata{controller=Controller}=ReqData, _Args) when Controller =/= undefined ->
     %% Call the decision core
-    elli_machine_decision_core:handle_request(Controller, ReqData),
-
-    %% io:fwrite(standard_error, "result: ~p~n", [Result]),
-
-    %% Stop 
-    %% elli_machine_controller:stop(ControllerFinState, RequestData)
-
-    %% Respond.
-    ignore;
+    case elli_machine_decision_core:handle_request(Controller, ReqData) of
+        {_, ControllerFin, ReqDataFin} ->
+            ok = elli_machine_controller:stop(ControllerFin, ReqDataFin),                       
+            emr:response(ReqDataFin);
+        {upgrade, _UpgradeFun, _ControllerFin, _ControllerFin} ->
+            %% TODO: websocket upgrade should be done differently
+            ignore
+    end;
 
 handle(_Req, Args) ->
     ignore.
             
-    
+
 % @doc Handle event
 %
 handle_event(elli_startup, [], Config) ->
@@ -101,5 +94,54 @@ report(Name, Term) ->
 
 dispatcher(Args) ->
     proplists:get_value(dispatcher, Args).
+
+%%
+%% Tests
+%%
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+config() ->
+    MachineConfig = [
+        {dispatcher, {elli_machine_dispatcher, [
+            {dispatch_list, [
+                {[<<"hello">>, '*'], example_controller, []}
+            ]}
+        ]}}
+    ], 
+
+    MiddlewareConfig = [
+        {mods, [
+            {elli_machine, MachineConfig}
+        ]}
+    ],
+
+    [{callback, elli_middleware},
+     {callback_args, MiddlewareConfig}, {port, 8000}].
+
+not_found_test() ->
+    Config = config(),
+    ?assertEqual({404, [], <<"Not Found">>},
+                 elli_test:call('GET', <<"/not_found">>, 
+                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+    ?assertEqual({404, [], <<"Not Found">>}, elli_test:call('GET', <<"/not_found">>, [], <<>>, Config)),
+    ok.
+
+hello_world_test() ->
+    Config = config(),
+
+    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
+                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+                 elli_test:call('GET', <<"/hello">>, 
+                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+
+    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
+                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+                 elli_test:call('GET', <<"/hello">>, [], <<>>, Config)),
+
+    ok.
+
+-endif. %% TEST
     
 

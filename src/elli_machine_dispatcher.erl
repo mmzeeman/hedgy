@@ -63,6 +63,8 @@ dispatch(HostAsBinary, Path, DispatchList) ->
 
     try_host_binding(DispatchList, lists:reverse(Host), Port, Path, ExtraDepth).
 
+split_host_port(undefined) ->
+    {[], 80};
 split_host_port(HostAsBinary) ->
     case binary:split(HostAsBinary, <<$:>>) of
         [HostPart, PortPart] ->

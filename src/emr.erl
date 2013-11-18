@@ -24,6 +24,7 @@
 
 -export([
     make_reqdata/1,
+    response/1,
 
     method/1,
     get_req_header_lc/2,
@@ -43,6 +44,10 @@
 -spec make_reqdata(Host :: undefined | binary()) -> elli_machine:req().
 make_reqdata(Host) ->
     #machine_reqdata{host=Host}.
+
+% @doc return an elli respons.
+response(#machine_reqdata{resp_code=Code, resp_headers=Headers, resp_body=Body}) when Code =/= undefined ->
+    {Code, Headers, Body}.
 
 % @doc 
 method(#machine_reqdata{req=Req}) ->
