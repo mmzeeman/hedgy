@@ -57,7 +57,7 @@ preprocess(Req, Args) ->
 
 % @doc Handle the request.
 %
-handle(#machine_reqdata{controller=Controller}=ReqData, _Args) ->
+handle(#machine_reqdata{controller=Controller}=ReqData, _Args) when Controller =/= undefined ->
     %% Call the decision core
     elli_machine_decision_core:handle_request(Controller, ReqData),
 
