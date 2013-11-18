@@ -82,14 +82,7 @@ binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
 % @doc Remove whitespace from Bin
 -spec remove_whitespace(binary()) -> binary().
 remove_whitespace(Bin) ->
-    remove_whitespace(Bin, <<>>).
-remove_whitespace(<<>>, Acc) ->
-    Acc;
-remove_whitespace(<<C, Rest/binary>>, Acc) when C =:= $\s; C =:= $\t; C =:= $\r; C =:= $\n ->
-    remove_whitespace(Rest, Acc);
-remove_whitespace(<<C, Rest/binary>>, Acc) ->
-    remove_whitespace(Rest, <<Acc/binary, C>>).
-
+    << <<C>> || <<C>> <= Bin, not (C =:= $\s orelse C=:=$\t orelse C=:= $\r orelse C =:= $\n) >>.
 
 %%
 %% Helpers
@@ -357,6 +350,7 @@ binary_join_test() ->
 
 remove_whitespace_test() ->
     ?assertEqual(<<"test">>, remove_whitespace(<<"t e s t">>)),
+    ?assertEqual(<<"test">>, remove_whitespace(<<"t e\ts\rt\r\n">>)),
     ?assertEqual(<<"">>, remove_whitespace(<<"   ">>)),
     ?assertEqual(<<"">>, remove_whitespace(<<"">>)),
     ok.
