@@ -93,7 +93,7 @@ respond(Code, Rs, Rd) ->
         _ -> 
             {Rs, Rd}
     end,
-    RdRespCode = emr:set_response_code(Code, RdCode),
+    RdRespCode = emr:set_resp_code(Code, RdCode),
     controller_call(finish_request, RsCode, RdRespCode).
 
 respond(Code, Headers, Rs, Rd) ->

@@ -8,6 +8,7 @@
 
     cache = [],
 
+    resp_code = undefined :: undefined | non_neg_integer(),
     resp_headers = [], 
     resp_body = <<>> :: binary() | iolist(),
 

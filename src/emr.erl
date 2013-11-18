@@ -28,7 +28,10 @@
     method/1,
     get_req_header_lc/2,
 
+    set_resp_code/2,
     set_resp_header/3,
+    set_resp_body/2,
+
     set_metadata/3,
     get_metadata/2
 ]).
@@ -54,8 +57,15 @@ get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
             elli_bstr:to_lower(Val)
     end.
 
+
+set_resp_code(Code, ReqData) ->
+    ReqData#machine_reqdata{resp_code=Code}.
+
 set_resp_header(Header, Value, #machine_reqdata{resp_headers=RespHeaders}=ReqData) ->
     ReqData#machine_reqdata{resp_headers=[{Header, Value}|RespHeaders]}.
+
+set_resp_body(Body, ReqData) ->
+    ReqData#machine_reqdata{resp_body=Body}.    
 
 
 % @doc Sets metadata

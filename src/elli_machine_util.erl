@@ -58,12 +58,10 @@ choose_media_type(Provided, AcceptHead) ->
 
 % @doc Select a charset.
 choose_charset(CSets, AccCharHdr) ->
-    io:fwrite(standard_error, "choose_charset: ~p, ~p~n", [CSets, AccCharHdr]),
     do_choose(CSets, AccCharHdr, <<"ISO-8859-1">>).
 
 % @doc Select an encoding.
 choose_encoding(Encs, AccEncHdr) ->
-    io:fwrite(standard_error, "choose_encoding: ~p, ~p~n", [Encs, AccEncHdr]),
     do_choose(Encs, AccEncHdr, <<"identity">>).
 
 % @doc Join the binary strings in the list with the sep
@@ -198,14 +196,11 @@ format_content_type(Type, []) ->
 format_content_type(Type, [H|T]) ->
     format_content_type(<<Type/binary, "; ", H/binary>>, T).
 
-
-
-
-
 do_choose(Choices, Header, Default) ->
-    Accepted = build_conneg_list(string:tokens(Header, ",")),
+    NoWsHeader = elli_machine_util:remove_whitespace(Header),
+    Accepted = build_conneg_list(binary:split(NoWsHeader, <<",">>, [global])),
     DefaultPrio = [P || {P,C} <- Accepted, C =:= Default],
-    StarPrio = [P || {P,C} <- Accepted, C =:= "*"],
+    StarPrio = [P || {P,C} <- Accepted, C =:= <<"*">>],
     DefaultOkay = case DefaultPrio of
         [] ->
             case StarPrio of
@@ -245,14 +240,14 @@ do_choose(Default, DefaultOkay, AnyOkay, Choices, [AccPair|AccRest]) ->
             do_choose(Default, DefaultOkay, AnyOkay,
                             lists:delete(Acc, Choices), AccRest);
         _ ->
-            LAcc = string:to_lower(Acc),
-            LChoices = [string:to_lower(X) || X <- Choices],
+            LAcc = elli_bstr:to_lower(Acc),
+            LChoices = [elli_bstr:to_lower(X) || X <- Choices],
             % doing this a little more work than needed in
             % order to be easily insensitive but preserving
             case lists:member(LAcc, LChoices) of
                 true -> 
                     hd([X || X <- Choices,
-                             string:to_lower(X) =:= LAcc]);
+                             elli_bstr:to_lower(X) =:= LAcc]);
                 false -> do_choose(Default, DefaultOkay, AnyOkay,
                                          Choices, AccRest)
             end
@@ -262,16 +257,17 @@ build_conneg_list(AccList) ->
     build_conneg_list(AccList, []).
 build_conneg_list([], Result) -> lists:reverse(lists:sort(Result));
 build_conneg_list([Acc|AccRest], Result) ->
-    XPair = list_to_tuple([string:strip(X) || X <- string:tokens(Acc, ";")]),
+    XPair = list_to_tuple([X || X <- binary:split(Acc, <<";">>, [global])]),
     Pair = case XPair of
-        {Choice, [Q,$=|PrioStr]} when Q=:=$Q; Q=:=$q ->
+        {Choice, <<Q, $=, PrioStr/binary>>} when Q=:=$Q; Q=:=$q ->
             case PrioStr of
-                "0" -> {0.0, Choice};
-                "1" -> {1.0, Choice};
-                [$.|_] ->
+                <<"0">> -> {0.0, Choice};
+                <<"1">> -> {1.0, Choice};
+                <<$., Val/binary>> ->
                     %% handle strange FeedBurner Accept
-                    {list_to_float([$0|PrioStr]), Choice};
-                _ -> {list_to_float(PrioStr), Choice}
+                    {list_to_float([$0, $. | binary_to_list(Val)]), Choice};
+                _ -> 
+                    {list_to_float(binary_to_list(PrioStr)), Choice}
             end;
         {Choice} ->
             {1.0, Choice}
@@ -418,7 +414,7 @@ choose_media_type_qval_test() ->
     ok.
 
 choose_encoding_test() ->
-    ?assertEqual(<<>>, choose_encoding([<<"identity">>], <<"gzip, deflate">>)),
+    ?assertEqual(<<"identity">>, choose_encoding([<<"identity">>], <<"gzip, deflate">>)),
     ok.
 
 

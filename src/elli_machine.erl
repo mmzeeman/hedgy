@@ -61,6 +61,8 @@ handle(#machine_reqdata{controller=Controller}=ReqData, _Args) when Controller =
     %% Call the decision core
     elli_machine_decision_core:handle_request(Controller, ReqData),
 
+    %% io:fwrite(standard_error, "result: ~p~n", [Result]),
+
     %% Stop 
     %% elli_machine_controller:stop(ControllerFinState, RequestData)
 
