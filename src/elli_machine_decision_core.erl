@@ -27,7 +27,6 @@
 -author('Maas-Maarten Zeeman <mmzeeman@xs4all.nl>').
 
 -export([handle_request/2]).
--export([do_log/1]).
 
 -include("elli_machine.hrl").
 
@@ -152,18 +151,6 @@ decision_flow(X, _TestResult, Rs, Rd) when is_atom(X) ->
     d(X, Rs, Rd);
 decision_flow({ErrCode, Reason}, _TestResult, Rs, Rd) when is_integer(ErrCode) ->
     error_response(ErrCode, Reason, Rs, Rd).
-
-do_log(LogData) ->
-    case application:get_env(webzmachine, webmachine_logger_module) of
-        {ok, LoggerModule} -> spawn(LoggerModule, log_access, [LogData]);
-        _ -> nop
-    end,
-    case application:get_env(webzmachine, perf_log_dir) of
-        {ok, _} ->
-               spawn(webmachine_perf_logger, log, [LogData]);
-           _ ->
-               ignore
-    end.
 
 
 

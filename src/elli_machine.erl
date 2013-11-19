@@ -23,7 +23,7 @@
 -include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export([preprocess/2, handle/2, handle_event/3]).
+-export([preprocess/2, postprocess/3, handle/2, handle_event/3]).
 
 -export_type([reqdata/0]).
 -type reqdata() :: record(machine_reqdata).
@@ -54,6 +54,13 @@ handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
     end;
 handle(_Req, Args) ->
     ignore.
+
+%%
+%% TODO, use postprocess to let the dispatcher help with rendering error 
+%% responses. This should not be done in the decision core.
+%%
+postprocess({_C, Rd}, Response, _Args) ->
+    Response.
             
 
 % @doc Handle event
