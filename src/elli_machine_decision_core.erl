@@ -57,12 +57,6 @@ cacheable(generate_etag) -> true;
 cacheable(_) -> false.
 
 
-get_header_val(H, Rd) -> 
-    emr:get_req_header_lc(H, Rd).
-
-method(Rd) ->
-    emr:method(Rd).
-
 d(DecisionID, Controller, ReqData) ->
     elli_machine_controller:log_d(DecisionID, Controller, ReqData),
     decision(DecisionID, Controller, ReqData).
@@ -162,14 +156,14 @@ decision(v3b13b, Rs, Rd) ->
 %% "Known method?"
 decision(v3b12, Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(known_methods, Rs, Rd),
-    decision_test(lists:member(method(Rd1), Methods), true, v3b11, 501, Rs1, Rd1);
+    decision_test(lists:member(emr:method(Rd1), Methods), true, v3b11, 501, Rs1, Rd1);
 %% "URI too long?"
 decision(v3b11, Rs, Rd) ->
     decision_test(controller_call(uri_too_long, Rs, Rd), true, 414, v3b10);
 %% "Method allowed?"
 decision(v3b10, Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(allowed_methods, Rs, Rd),
-    case lists:member(method(Rd1), Methods) of
+    case lists:member(emr:method(Rd1), Methods) of
         true ->
             d(v3b9, Rs1, Rd1);
         false ->
@@ -198,11 +192,11 @@ decision(v3b7, Rs, Rd) ->
     decision_test(controller_call(forbidden, Rs, Rd), true, 403, v3b6_upgrade);
 %% "Upgrade?"
 decision(v3b6_upgrade, Rs, Rd) ->
-    case get_header_val(<<"Upgrade">>, Rd) of
+    case emr:get_req_header_lc(<<"Upgrade">>, Rd) of
                 undefined ->
                         d(v3b6, Rs, Rd);
                 UpgradeHdr ->
-                    case get_header_val(<<"Connection">>, Rd) of
+                    case emr:get_req_header_lc(<<"Connection">>, Rd) of
                                 undefined ->
                                         d(v3b6, Rs, Rd);
                                 Connection ->
@@ -243,7 +237,7 @@ decision(v3b3, Rs, Rd) ->
 decision(v3c3, Rs, Rd) ->
     {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
     PTypes = [Type || {Type,_Fun} <- ContentTypes],
-    case get_header_val(<<"Accept">>, Rd1) of
+    case emr:get_req_header_lc(<<"Accept">>, Rd1) of
         undefined ->
             {ok, RdCT} = emr:set_metadata('content-type', hd(PTypes), Rd1),
             d(v3d4, Rs1, RdCT);
@@ -254,7 +248,7 @@ decision(v3c3, Rs, Rd) ->
 decision(v3c4, Rs, Rd) ->
     {ContentTypesProvided, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
     PTypes = [Type || {Type,_Fun} <- ContentTypesProvided],
-    AcceptHdr = get_header_val(<<"Accept">>, Rd1),
+    AcceptHdr = emr:get_req_header_lc(<<"Accept">>, Rd1),
     case elli_machine_util:choose_media_type(PTypes, AcceptHdr) of
         none ->
             respond(406, Rs1, Rd1);
@@ -264,19 +258,19 @@ decision(v3c4, Rs, Rd) ->
     end;
 %% Accept-Language exists?
 decision(v3d4, Rs, Rd) ->
-    decision_test(get_header_val(<<"Accept-Language">>, Rd), undefined, v3e5, v3d5, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"Accept-Language">>, Rd), undefined, v3e5, v3d5, Rs, Rd);
 %% Acceptable Language available? %% WMACH-46 (do this as proper conneg)
 decision(v3d5, Rs, Rd) ->
     decision_test(controller_call(language_available, Rs, Rd), true, v3e5, 406);
 %% Accept-Charset exists?
 decision(v3e5, Rs, Rd) ->
-    case get_header_val(<<"Accept-Charset">>, Rd) of
+    case emr:get_req_header_lc(<<"Accept-Charset">>, Rd) of
         undefined -> decision_test(choose_charset(<<"*">>, Rs, Rd), none, 406, v3f6);
         _ -> d(v3e6, Rs, Rd)
     end;
 %% Acceptable Charset available?
 decision(v3e6, Rs, Rd) ->
-    decision_test(choose_charset(get_header_val(<<"Accept-Charset">>, Rd), Rs, Rd), none, 406, v3f6);
+    decision_test(choose_charset(emr:get_req_header_lc(<<"Accept-Charset">>, Rd), Rs, Rd), none, 406, v3f6);
 %% Accept-Encoding exists?
 % (also, set content-type header here, now that charset is chosen)
 decision(v3f6, Rs, Rd) ->
@@ -286,13 +280,13 @@ decision(v3f6, Rs, Rd) ->
                CS -> <<"; charset=", CS/binary>>
            end,
     Rd1 = emr:set_resp_header(<<"Content-Type">>, <<CType/binary, CSet/binary>>, Rd),
-    case get_header_val(<<"Accept-Encoding">>, Rd1) of
+    case emr:get_req_header_lc(<<"Accept-Encoding">>, Rd1) of
         undefined -> decision_test(choose_encoding(<<"identity;q=1.0,*;q=0.5">>, Rs, Rd1), none, 406, v3g7);
         _ -> d(v3f7, Rs, Rd1)
     end;
 %% Acceptable encoding available?
 decision(v3f7, Rs, Rd) ->
-    decision_test(choose_encoding(get_header_val(<<"Accept-Encoding">>, Rd), Rs, Rd), none, 406, v3g7);
+    decision_test(choose_encoding(emr:get_req_header_lc(<<"Accept-Encoding">>, Rd), Rs, Rd), none, 406, v3g7);
 %% "Resource exists?"
 decision(v3g7, Rs, Rd) ->
     % this is the first place after all conneg, so set Vary here
@@ -304,29 +298,29 @@ decision(v3g7, Rs, Rd) ->
     decision_test(controller_call(resource_exists, Rs1, RdVar), true, v3g8, v3h7);
 %% "If-Match exists?"
 decision(v3g8, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
 %% "If-Match: * exists"
 decision(v3g9, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
-    ETags = elli_machine_util:split_quoted_strings(get_header_val(<<"If-Match">>, Rd)),
+    ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-Match">>, Rd)),
     decision_test_fn(controller_call(generate_etag, Rs, Rd),
                      fun(ETag) -> lists:member(ETag, ETags) end,
                      v3h10, 412);
 %% "If-Match: * exists"
 decision(v3h7, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
 %% "If-unmodified-since exists?"
 decision(v3h10, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
 %% "I-UM-S is valid date?"
 decision(v3h11, Rs, Rd) ->
-    IUMSDate = get_header_val(<<"If-Unmodified-Since">>, Rd),
+    IUMSDate = emr:get_req_header_lc(<<"If-Unmodified-Since">>, Rd),
     decision_test(elli_machine_util:convert_request_date(IUMSDate), bad_date, v3i12, v3h12, Rs, Rd);
 %% "Last-Modified > I-UM-S?"
 decision(v3h12, Rs, Rd) ->
-    ReqDate = get_header_val(<<"If-Unmodified-Since">>, Rd),
+    ReqDate = emr:get_req_header_lc(<<"If-Unmodified-Since">>, Rd),
     ReqErlDate = elli_machine_util:convert_request_date(ReqDate),
     {ResErlDate, Rs1, Rd1} = controller_call(last_modified, Rs, Rd),
     decision_test(ResErlDate > ReqErlDate, true, 412, v3i12, Rs1, Rd1);
@@ -346,16 +340,16 @@ decision(v3i4, Rs, Rd) ->
     end;
 %% PUT?
 decision(v3i7, Rs, Rd) ->
-    decision_test(method(Rd), 'PUT', v3i4, v3k7, Rs, Rd);
+    decision_test(emr:method(Rd), 'PUT', v3i4, v3k7, Rs, Rd);
 %% "If-none-match exists?"
 decision(v3i12, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-None-Match">>, Rd), undefined, v3l13, v3i13, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-None-Match">>, Rd), undefined, v3l13, v3i13, Rs, Rd);
 %% "If-None-Match: * exists?"
 decision(v3i13, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
 %% GET or HEAD?
 decision(v3j18, Rs, Rd) ->
-    decision_test(lists:member(method(Rd),['GET','HEAD']), true, 304, 412, Rs, Rd);
+    decision_test(lists:member(emr:method(Rd),['GET','HEAD']), true, 304, 412, Rs, Rd);
 %% "Moved permanently?"
 decision(v3k5, Rs, Rd) ->
     {MovedPermanently, Rs1, Rd1} = controller_call(moved_permanently, Rs, Rd),
@@ -375,7 +369,7 @@ decision(v3k7, Rs, Rd) ->
     decision_test(controller_call(previously_existed, Rs, Rd), true, v3k5, v3l7);
 %% "Etag in if-none-match?"
 decision(v3k13, Rs, Rd) ->
-    ETags = elli_machine_util:split_quoted_strings(get_header_val(<<"If-None-Match">>, Rd)),
+    ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-None-Match">>, Rd)),
     decision_test_fn(controller_call(generate_etag, Rs, Rd),
                      %% Membership test is a little counter-intuitive here; if the
                      %% provided ETag is a member, we follow the error case out
@@ -398,36 +392,36 @@ decision(v3l5, Rs, Rd) ->
     end;
 %% "POST?"
 decision(v3l7, Rs, Rd) ->
-    decision_test(method(Rd), 'POST', v3m7, 404, Rs, Rd);
+    decision_test(emr:method(Rd), 'POST', v3m7, 404, Rs, Rd);
 %% "IMS exists?"
 decision(v3l13, Rs, Rd) ->
-    decision_test(get_header_val(<<"If-Modified-Since">>, Rd), undefined, v3m16, v3l14, Rs, Rd);
+    decision_test(emr:get_req_header_lc(<<"If-Modified-Since">>, Rd), undefined, v3m16, v3l14, Rs, Rd);
 %% "IMS is valid date?"
 decision(v3l14, Rs, Rd) -> 
-    IMSDate = get_header_val(<<"If-Modified-Since">>, Rd),
+    IMSDate = emr:get_req_header_lc(<<"If-Modified-Since">>, Rd),
     decision_test(elli_machine_util:convert_request_date(IMSDate), bad_date, v3m16, v3l15, Rs, Rd);
 %% "IMS > Now?"
 decision(v3l15, Rs, Rd) ->
     NowDateTime = calendar:universal_time(),
-    ReqDate = get_header_val(<<"If-Modified-Since">>, Rd),
+    ReqDate = emr:get_req_header_lc(<<"If-Modified-Since">>, Rd),
     ReqErlDate = elli_machine_util:convert_request_date(ReqDate),
     decision_test(ReqErlDate > NowDateTime, true, v3m16, v3l17, Rs, Rd);
 %% "Last-Modified > IMS?"
 decision(v3l17, Rs, Rd) ->
-    ReqDate = get_header_val(<<"If-Modified-Since">>, Rd),    
+    ReqDate = emr:get_req_header_lc(<<"If-Modified-Since">>, Rd),    
     ReqErlDate = elli_machine_util:convert_request_date(ReqDate),
     {ResErlDate, Rs1, Rd1} = controller_call(last_modified, Rs, Rd),
     decision_test(ResErlDate =:= undefined orelse ResErlDate > ReqErlDate,
                   true, v3m16, 304, Rs1, Rd1);
 %% "POST?"
 decision(v3m5, Rs, Rd) ->
-    decision_test(method(Rd), 'POST', v3n5, 410, Rs, Rd);
+    decision_test(emr:method(Rd), 'POST', v3n5, 410, Rs, Rd);
 %% "Server allows POST to missing resource?"
 decision(v3m7, Rs, Rd) ->
     decision_test(controller_call(allow_missing_post, Rs, Rd), true, v3n11, 404);
 %% "DELETE?"
 decision(v3m16, Rs, Rd) ->
-    decision_test(method(Rd), 'DELETE', v3m20, v3n16, Rs, Rd);
+    decision_test(emr:method(Rd), 'DELETE', v3m20, v3n16, Rs, Rd);
 %% DELETE enacted immediately?
 %% Also where DELETE is forced.
 decision(v3m20, Rs, Rd) ->
@@ -506,7 +500,7 @@ decision(v3n11, Rs, Rd) ->
     end;
 %% "POST?"
 decision(v3n16, Rs, Rd) ->
-    decision_test(method(Rd), 'POST', v3n11, v3o16, Rs, Rd);
+    decision_test(emr:method(Rd), 'POST', v3n11, v3o16, Rs, Rd);
 %% Conflict?
 decision(v3o14, Rs, Rd) ->
     {IsConflict, Rs1, Rd1} = controller_call(is_conflict, Rs, Rd),
@@ -524,11 +518,11 @@ decision(v3o14, Rs, Rd) ->
     end;
 %% "PUT?"
 decision(v3o16, Rs, Rd) ->
-    decision_test(method(Rd), 'PUT', v3o14, v3o18, Rs, Rd);
+    decision_test(emr:method(Rd), 'PUT', v3o14, v3o18, Rs, Rd);
 %% Multiple representations?
 % (also where body generation for GET and HEAD is done)
 decision(v3o18, Rs, Rd) ->    
-    BuildBody = case method(Rd) of
+    BuildBody = case emr:method(Rd) of
         'GET' -> true;
         'HEAD' -> true;
         _ -> false
@@ -599,7 +593,7 @@ decision(v3p11, Rs, Rd) ->
     end.
 
 accept_helper(Rs, Rd) ->
-    CT = case get_header_val(<<"Content-Type">>, Rd) of
+    CT = case emr:get_req_header_lc(<<"Content-Type">>, Rd) of
              undefined -> <<"application/octet-stream">>;
              Other -> Other
          end,
