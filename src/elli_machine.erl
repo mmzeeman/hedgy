@@ -34,47 +34,30 @@
 % Webmachine like middleware for Elli.
 % 
     
-% @doc Preprocess the request, call the dispatcher and return our reqdata.
+% @doc Preprocess the request, call the dispatcher and return a controller 
+% reqdata.
 %
 -spec preprocess(elli:req(), any()) -> {{module(), any()}, reqdata()}.
 preprocess(Req, Args) ->
     {Mod, ModArgs} = dispatcher(Args),
     dispatch(Req, Mod, ModArgs).
 
-% @doc Handle the request.
-%
+% @doc Handle the request. Call the decision core which calls the callbacks
+% of the controller.
 handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
-    %% Call the decision core
     case elli_machine_decision_core:handle_request(Controller, ReqData) of
-        {_, ControllerFin, ReqDataFin} ->
-            ok = elli_machine_controller:stop(ControllerFin, ReqDataFin),                       
+        {_, ControllerFin, ReqDataFin} ->                 
             emr:response(ReqDataFin);
-        {upgrade, _UpgradeFun, _ControllerFin, _ControllerFin} ->
+        {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
             {501, [], <<"Not Implemented">>}
     end;
-
 handle(_Req, Args) ->
     ignore.
             
 
 % @doc Handle event
 %
-handle_event(elli_startup, [], Config) ->
-   ok; 
-
-% Errors during request handlers
-handle_event(request_throw, [_Request, _Exception, _Stacktrace]=E, _) ->
-    report(request_throw, E),
-    ok;
-handle_event(request_error, [_Request, _Exception, _Stacktrace]=E, _) -> 
-    report(request_error, E),
-    ok;
-handle_event(request_exit, [_Request, _Exception, _Stacktrace]=E, _) -> 
-    report(request_exit, E),
-    ok;
-
-% Other events.
 handle_event(_Name, _EventArgs, _) -> ok.
 
 %%
@@ -96,9 +79,6 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
 init_controller(ControllerMod, ControllerOpts) ->
     {ok, ControllerState} = elli_machine_controller:init(ControllerMod, ControllerOpts),
     {ControllerMod, ControllerState}.
-
-report(Name, Term) ->
-    io:fwrite(standard_error, "~p: ~p~n", [Name, Term]).
 
 dispatcher(Args) ->
     proplists:get_value(dispatcher, Args).

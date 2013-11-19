@@ -18,6 +18,7 @@ start() ->
 
     Config = [
         {mods, [
+            {elli_debug_console, []},
             {elli_date, []},
             {elli_server_name, []},
             {elli_machine, MachineConfig}

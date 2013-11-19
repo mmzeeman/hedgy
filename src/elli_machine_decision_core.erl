@@ -213,24 +213,24 @@ decision(v3b7, Rs, Rd) ->
 decision(v3b6_upgrade, Rs, Rd) ->
     case get_header_val(<<"Upgrade">>, Rd) of
                 undefined ->
-                        decision(v3b6, Rs, Rd);
+                        d(v3b6, Rs, Rd);
                 UpgradeHdr ->
                     case get_header_val(<<"Connection">>, Rd) of
                                 undefined ->
-                                        decision(v3b6, Rs, Rd);
+                                        d(v3b6, Rs, Rd);
                                 Connection ->
                                         case contains_token(<<"upgrade">>, Connection) of
                                                 true ->
                                                         {Choosen, Rs1, Rd1} = choose_upgrade(UpgradeHdr, Rs, Rd),
                                                         case Choosen of
                                                                 none ->
-                                                                        decision(v3b6, Rs1, Rd1);
+                                                                        d(v3b6, Rs1, Rd1);
                                                                 {_Protocol, UpgradeFunc} ->
                                                                         %% TODO: log the upgrade action
                                                                         {upgrade, UpgradeFunc, Rs1, Rd1}
                                                         end;
                                                 false ->
-                                                        decision(v3b6, Rs, Rd)
+                                                        d(v3b6, Rs, Rd)
                                         end
                         end
         end;

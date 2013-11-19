@@ -26,11 +26,10 @@
 -author('Maas-Maarten Zeeman <mmzeeman@xs4all.nl>').
 
 -export([
+    init/2,
     do/3,
-    log_d/3,
-    stop/2,
 
-    init/2
+    log_d/3
 ]).
 
 -include("elli_machine.hrl").
@@ -116,11 +115,13 @@ default(finish_request) ->
     true;
 default(_) ->
     no_default.
-          
+        
+% @doc Intitialize controller Mod.
+-spec init(module(), any()) -> {ok, {module(), any()}}.  
 init(Mod, ModArgs) ->
-    % io:fwrite(standard_error, "init ~p~n", [Mod]),
     {ok, State} = Mod:init(ModArgs),
     {ok, {Mod, State}}.
+
 
 do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
@@ -147,11 +148,7 @@ log_d(_DecisionID, {_Mod, _State}, _ReqData) ->
     % log_decision(Trace, DecisionID).
     ok.
 
-stop({_Mod, _State}, _ReqData) ->
-    % io:fwrite(standard_error, "stop ~p~n", [_Mod]),
-    %stop_log_proc(Trace, ReqData).
-    ok.
-    
+
 
 
 % log_reqid(false, _ReqId) ->
