@@ -30,8 +30,6 @@
 -export([do_log/1]).
 
 -include("elli_machine.hrl").
-%-include("webmachine_logger.hrl").
-%-include("wm_reqdata.hrl").
 
 handle_request(Controller, ReqData) ->
     d(v3b13, Controller, ReqData).
@@ -41,7 +39,7 @@ handle_request(Controller, ReqData) ->
 controller_call(Fun, Controller, #machine_reqdata{cache=Cache}=ReqData) ->
     case cacheable(Fun) of
         true ->
-            case proplists:lookup(Fun, ReqData#machine_reqdata.cache) of
+            case proplists:lookup(Fun, Cache) of
                 none -> 
                     {T, Controller1, ReqData1} = elli_machine_controller:do(Fun, Controller, ReqData),
                     {T, Controller1, ReqData1#machine_reqdata{cache=[{Fun,T}|Cache]}};
@@ -67,7 +65,7 @@ method(Rd) ->
     emr:method(Rd).
 
 d(DecisionID, Controller, ReqData) ->
-    elli_machine_controller:log_d(Controller, ReqData),
+    elli_machine_controller:log_d(DecisionID, Controller, ReqData),
     decision(DecisionID, Controller, ReqData).
 
 respond(Code, Rs, Rd) ->

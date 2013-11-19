@@ -36,22 +36,14 @@
     
 % @doc Preprocess the request, call the dispatcher and return our reqdata.
 %
+-spec preprocess(elli:req(), any()) -> {{module(), any()}, reqdata()}.
 preprocess(Req, Args) ->
     {Mod, ModArgs} = dispatcher(Args),
-    case Mod:dispatch(Req, ModArgs) of
-        {{no_dispatch_match, Host, PathSpec}, ReqData} ->
-            ReqData;
-        {{ControllerMod, ControllerOpts, 
-          HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
-            %% TODO -- fill the rest of the request data strucute.
-            ReqData1 = ReqData#machine_reqdata{req=Req},
-            {ok, ControllerState} = elli_machine_controller:init(ControllerMod, ControllerOpts),
-            ReqData1#machine_reqdata{controller={ControllerMod, ControllerState}}
-    end.
+    dispatch(Req, Mod, ModArgs).
 
 % @doc Handle the request.
 %
-handle(#machine_reqdata{controller=Controller}=ReqData, _Args) when Controller =/= undefined ->
+handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
     %% Call the decision core
     case elli_machine_decision_core:handle_request(Controller, ReqData) of
         {_, ControllerFin, ReqDataFin} ->
@@ -88,6 +80,22 @@ handle_event(_Name, _EventArgs, _) -> ok.
 %%
 %% Helpers
 %%
+
+dispatch(Req, Dispatcher, DispatchArgs) ->
+    case Dispatcher:dispatch(Req, DispatchArgs) of
+        {{no_dispatch_match, Host, PathSpec}, ReqData} ->
+            {undefined, ReqData};
+        {{ControllerMod, ControllerOpts, 
+          HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
+            %% TODO -- Clean up this mess. fill the rest of the request data.
+            ReqData1 = ReqData#machine_reqdata{req=Req},
+            Controller = init_controller(ControllerMod, ControllerOpts),
+            {Controller, ReqData1}
+    end.
+
+init_controller(ControllerMod, ControllerOpts) ->
+    {ok, ControllerState} = elli_machine_controller:init(ControllerMod, ControllerOpts),
+    {ControllerMod, ControllerState}.
 
 report(Name, Term) ->
     io:fwrite(standard_error, "~p: ~p~n", [Name, Term]).
@@ -130,7 +138,6 @@ not_found_test() ->
 
 hello_world_test() ->
     Config = config(),
-
     ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
                         {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
                  elli_test:call('GET', <<"/hello">>, 
@@ -141,6 +148,25 @@ hello_world_test() ->
                  elli_test:call('GET', <<"/hello">>, [], <<>>, Config)),
 
     ok.
+
+head_test() ->
+    %% Note: elli removes the body.
+    Config = config(),
+    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
+                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+                 elli_test:call('HEAD', <<"/hello">>, 
+                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+    ok.
+
+four_o_five_test() ->
+    Config = config(),
+
+    ?assertEqual({405, [{<<"Allow">>,"GET, HEAD"}], <<>>},
+                 elli_test:call('POST', <<"/hello">>, 
+                    [{<<"Host">>, <<"example.com">>}], <<"test=123">>, Config)),
+
+    ok.
+
 
 -endif. %% TEST
     

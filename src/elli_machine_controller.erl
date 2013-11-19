@@ -27,7 +27,7 @@
 
 -export([
     do/3,
-    log_d/2,
+    log_d/3,
     stop/2,
 
     init/2
@@ -118,6 +118,7 @@ default(_) ->
     no_default.
           
 init(Mod, ModArgs) ->
+    % io:fwrite(standard_error, "init ~p~n", [Mod]),
     {ok, State} = Mod:init(ModArgs),
     {ok, {Mod, State}}.
 
@@ -141,11 +142,13 @@ controller_call(F, {Mod, State}, ReqData) ->
     {Res, ReqData1, State1} = Mod:F(ReqData, State),
     {Res, {Mod, State1}, ReqData1}.
     
-log_d(_Controller, _DecisionID) ->
+log_d(_DecisionID, {_Mod, _State}, _ReqData) ->
+    % io:fwrite(standard_error, "log_d ~p: ~p~n", [_Mod, _DecisionID]),
     % log_decision(Trace, DecisionID).
     ok.
 
-stop(_Controller, _ReqData) ->
+stop({_Mod, _State}, _ReqData) ->
+    % io:fwrite(standard_error, "stop ~p~n", [_Mod]),
     %stop_log_proc(Trace, ReqData).
     ok.
     
