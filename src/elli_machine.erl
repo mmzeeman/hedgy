@@ -50,8 +50,8 @@ handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
             ok = elli_machine_controller:stop(ControllerFin, ReqDataFin),                       
             emr:response(ReqDataFin);
         {upgrade, _UpgradeFun, _ControllerFin, _ControllerFin} ->
-            %% TODO: websocket upgrade should be done differently
-            ignore
+            %% TODO: websocket upgrade will be done differently
+            {501, [], <<"Not Implemented">>}
     end;
 
 handle(_Req, Args) ->
