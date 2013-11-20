@@ -29,7 +29,8 @@
     init/2,
     do/3,
 
-    handle_event/3
+    handle_event/3,
+    render_error/4
 ]).
 
 -include("elli_machine.hrl").
@@ -51,6 +52,15 @@ do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
 
 handle_event({Mod, State}, Name, EventArgs) ->
     Mod:handle_event(Name, EventArgs, State).
+
+render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
+    case erlang:function_exported(Mod, render_error, 4) of
+        true ->
+            Mod:render_error(Code, Reason, ReqData, State);
+        false ->
+            {ErrorHtml, ReqData1} = elli_machine_error_handler:render_error(Code, Reason, ReqData),
+            {ErrorHtml, Controller, ReqData1}
+    end.
 
 %%
 %% Helpers

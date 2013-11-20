@@ -33,6 +33,8 @@
     set_resp_header/3,
     set_resp_body/2,
 
+    has_resp_body/1,
+
     set_metadata/3,
     get_metadata/2
 ]).
@@ -70,8 +72,13 @@ set_resp_header(Header, Value, #machine_reqdata{resp_headers=RespHeaders}=ReqDat
     ReqData#machine_reqdata{resp_headers=[{Header, Value}|RespHeaders]}.
 
 set_resp_body(Body, ReqData) ->
-    ReqData#machine_reqdata{resp_body=Body}.    
+    ReqData#machine_reqdata{resp_body=Body}.
 
+% @doc Returns true iff the request has a response body.
+has_resp_body(#machine_reqdata{resp_body=undefined}) ->
+    false;
+has_resp_body(#machine_reqdata{}) ->
+    true.
 
 % @doc Sets metadata
 set_metadata('content-type', Val, ReqData) ->

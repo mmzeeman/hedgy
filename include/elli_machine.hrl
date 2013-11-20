@@ -4,7 +4,7 @@
 
 -record(machine_reqdata, {
 	req :: undefined | elli:req(),
-    
+
 	host :: undefined | binary(),
 
     cache = [],

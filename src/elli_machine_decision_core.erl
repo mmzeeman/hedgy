@@ -61,51 +61,43 @@ d(DecisionID, Controller, ReqData) ->
     elli_machine_controller:handle_event(Controller, decision, [DecisionID, ReqData]),
     decision(DecisionID, Controller, ReqData).
 
-respond(Code, Rs, Rd) ->
-    {RsCode, RdCode} = case Code of
+respond(Code, Controller, ReqData) ->
+    {CtCode, RdCode} = case Code of
         Code when Code =:= 403; Code =:= 404; Code =:= 410 ->
-            {ok, ErrorHandler} = application:get_env(webzmachine, error_handler),
             Reason = {none, none, []},
-            {ErrorHTML, RdError} = ErrorHandler:render_error(Code, Rd, Reason),
-            {Rs, emr:set_resp_body(ErrorHTML, RdError)};
+            {ErrorHTML, CtError, RdError} = 
+                elli_machine_controller:render_error(Controller, Code, Reason, ReqData),
+            {CtError, emr:set_resp_body(ErrorHTML, RdError)};
         304 ->
-            RdNoCT = emr:remove_resp_header(<<"Content-Type">>, Rd),
-            {Etag, RsEt, RdEt0} = controller_call(generate_etag, Rs, RdNoCT),
+            RdNoCT = emr:remove_resp_header(<<"Content-Type">>, ReqData),
+            {Etag, CtEt, RdEt0} = controller_call(generate_etag, Controller, RdNoCT),
             RdEt = case Etag of
                 undefined -> RdEt0;
                 ETag -> emr:set_resp_header(<<"ETag">>, ETag, RdEt0)
             end,
-            {Expires, RsExp, RdExp0} = controller_call(expires, RsEt, RdEt),
+            {Expires, CtExp, RdExp0} = controller_call(expires, CtEt, RdEt),
             RdExp = case Expires of
                 undefined -> RdExp0;
                 Exp -> emr:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
             end,
-            {RsExp, RdExp};
+            {CtExp, RdExp};
         _ -> 
-            {Rs, Rd}
+            {Controller, ReqData}
     end,
     RdRespCode = emr:set_resp_code(Code, RdCode),
-    controller_call(finish_request, RsCode, RdRespCode).
+    controller_call(finish_request, CtCode, RdRespCode).
 
 respond(Code, Headers, Rs, Rd) ->
     RdHs = emr:set_resp_headers(Headers, Rd),
     respond(Code, Rs, RdHs).
 
-error_response(Reason, Rs, Rd) ->
-    error_response(500, Reason, Rs, Rd).
+error_response(Reason, Controller, ReqData) ->
+    error_response(500, Reason, Controller, ReqData).
 
-error_response(Code, Reason, Rs, Rd) ->
-    ErrorHandler = error_handler(),
-    {ErrorHTML, Rd1} = ErrorHandler:render_error(Code, Rd, Reason),
+error_response(Code, Reason, Controller, ReqData) ->
+    {ErrorHTML, Ct1, Rd1} = elli_machine_controller:render_error(Controller, Code, ReqData, Reason),
     Rd2 = emr:set_resp_body(ErrorHTML, Rd1),
-    respond(Code, Rs, Rd2).
-
-
-error_handler() ->
-    case application:get_env(webzmachine, error_handler) of
-        undefined -> webmachine_error_handler;
-        {ok, ErrorHandler} -> ErrorHandler
-    end.
+    respond(Code, Ct1, Rd2).
 
 decision_test({Test, Controller, ReqData}, TestVal, TrueFlow, FalseFlow) ->
     decision_test(Test, TestVal, TrueFlow, FalseFlow, Controller, ReqData).
@@ -570,7 +562,7 @@ decision(v3o18b, Rs, Rd) ->
     decision_test(controller_call(multiple_choices, Rs, Rd), true, 300, 200);
 %% Response includes an entity?
 decision(v3o20, Rs, Rd) ->
-    decision_test(webmachine_request:has_resp_body(Rd), true, v3o18, 204, Rs, Rd);
+    decision_test(emr:has_resp_body(Rd), true, v3o18, 204, Rs, Rd);
 %% Conflict?
 decision(v3p3, Rs, Rd) ->
     {IsConflict, Rs1, Rd1} = controller_call(is_conflict, Rs, Rd),
@@ -618,7 +610,7 @@ accept_helper(Rs, Rd) ->
     end.
 
 encode_body_if_set(Rs, Rd) ->
-    case webmachine_request:has_resp_body(Rd) of
+    case emr:has_resp_body(Rd) of
         true ->
             Body = emr:resp_body(Rd),
             {Encoded, Rs1, Rd1} = encode_body(Body, Rs, Rd),

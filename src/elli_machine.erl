@@ -23,7 +23,7 @@
 -include_lib("elli/include/elli.hrl").
 -include("elli_machine.hrl").
 
--export([preprocess/2, postprocess/3, handle/2, handle_event/3]).
+-export([preprocess/2, handle/2, handle_event/3]).
 
 -export_type([reqdata/0]).
 -type reqdata() :: record(machine_reqdata).
@@ -46,21 +46,14 @@ preprocess(Req, Args) ->
 % of the controller.
 handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
     case elli_machine_decision_core:handle_request(Controller, ReqData) of
-        {_, ControllerFin, ReqDataFin} ->                 
+        {_, _ControllerFin, ReqDataFin} ->                 
             emr:response(ReqDataFin);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
             {501, [], <<"Not Implemented">>}
     end;
-handle(_Req, Args) ->
+handle(_Req, _Args) ->
     ignore.
-
-%%
-%% TODO, use postprocess to let the dispatcher help with rendering error 
-%% responses. This should not be done in the decision core.
-%%
-postprocess({_C, Rd}, Response, _Args) ->
-    Response.
             
 
 % @doc Handle event
@@ -73,10 +66,10 @@ handle_event(_Name, _EventArgs, _) -> ok.
 
 dispatch(Req, Dispatcher, DispatchArgs) ->
     case Dispatcher:dispatch(Req, DispatchArgs) of
-        {{no_dispatch_match, Host, PathSpec}, ReqData} ->
+        {{no_dispatch_match, _Host, _PathSpec}, ReqData} ->
             {undefined, ReqData};
         {{ControllerMod, ControllerOpts, 
-          HostRemainder, Port, PathRemainder, PathBindings, AppRoot, StringPath}, ReqData} ->
+          _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, ReqData} ->
             %% TODO -- Clean up this mess. fill the rest of the request data.
             ReqData1 = ReqData#machine_reqdata{req=Req},
             Controller = init_controller(ControllerMod, ControllerOpts),
