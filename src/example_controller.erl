@@ -15,7 +15,10 @@ ping(ReqData, Context) ->
 to_html(ReqData, Context) -> 
 	{<<"Hello, new world">>, ReqData, Context}.
 
+%%
+%% 
+%%
 
-handle_event(Name, Args, Context) ->
+handle_event(_Name, _Args, _Context) ->
 	%% io:fwrite(standard_error, "~p: ~p~n", [Name, Args]),
 	ok.

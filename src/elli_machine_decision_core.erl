@@ -58,7 +58,7 @@ cacheable(_) -> false.
 
 
 d(DecisionID, Controller, ReqData) ->
-    elli_machine_controller:log_d(DecisionID, Controller, ReqData),
+    elli_machine_controller:handle_event(Controller, decision, [DecisionID, ReqData]),
     decision(DecisionID, Controller, ReqData).
 
 respond(Code, Rs, Rd) ->
@@ -91,13 +91,15 @@ respond(Code, Headers, Rs, Rd) ->
     RdHs = emr:set_resp_headers(Headers, Rd),
     respond(Code, Rs, RdHs).
 
+error_response(Reason, Rs, Rd) ->
+    error_response(500, Reason, Rs, Rd).
+
 error_response(Code, Reason, Rs, Rd) ->
     ErrorHandler = error_handler(),
     {ErrorHTML, Rd1} = ErrorHandler:render_error(Code, Rd, Reason),
     Rd2 = emr:set_resp_body(ErrorHTML, Rd1),
     respond(Code, Rs, Rd2).
-error_response(Reason, Rs, Rd) ->
-    error_response(500, Reason, Rs, Rd).
+
 
 error_handler() ->
     case application:get_env(webzmachine, error_handler) of
@@ -110,7 +112,7 @@ decision_test({Test, Controller, ReqData}, TestVal, TrueFlow, FalseFlow) ->
 
 decision_test(Test,TestVal,TrueFlow,FalseFlow, Controller, ReqData) ->
     case Test of
-        {error, Reason} -> 
+        {error, Reason} ->
             error_response(Reason, Controller, ReqData);
         {error, Reason0, Reason1} -> 
             error_response({Reason0, Reason1}, Controller, ReqData);

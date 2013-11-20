@@ -29,10 +29,45 @@
     init/2,
     do/3,
 
-    log_d/3
+    handle_event/3
 ]).
 
 -include("elli_machine.hrl").
+
+        
+% @doc Intitialize controller Mod.
+-spec init(module(), any()) -> {ok, {module(), any()}}.  
+init(Mod, ModArgs) ->
+    {ok, State} = Mod:init(ModArgs),
+    {ok, {Mod, State}}.
+
+do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
+    case erlang:function_exported(Mod, Fun, 2) of
+        true ->
+            controller_call(Fun, Controller, ReqData);
+        false ->
+            use_default(Fun, Controller, ReqData)
+    end.
+
+handle_event({Mod, State}, Name, EventArgs) ->
+    Mod:handle_event(Name, EventArgs, State).
+
+%%
+%% Helpers
+%%
+
+controller_call(F, {Mod, State}, ReqData) ->
+    {Res, ReqData1, State1} = Mod:F(ReqData, State),
+    {Res, {Mod, State1}, ReqData1}.
+
+
+use_default(Fun, Controller, ReqData) ->
+    case default(Fun) of
+        no_default ->
+            {error, {error, no_default, Fun}, Controller, ReqData};
+        Default ->
+            {Default, Controller, ReqData}
+    end.
 
 default(ping) ->
     no_default;
@@ -115,105 +150,5 @@ default(finish_request) ->
     true;
 default(_) ->
     no_default.
-        
-% @doc Intitialize controller Mod.
--spec init(module(), any()) -> {ok, {module(), any()}}.  
-init(Mod, ModArgs) ->
-    {ok, State} = Mod:init(ModArgs),
-    {ok, {Mod, State}}.
 
 
-do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
-    case erlang:function_exported(Mod, Fun, 2) of
-        true ->
-            controller_call(Fun, Controller, ReqData);
-        false ->
-            use_default(Fun, Controller, ReqData)
-    end.
-
-use_default(Fun, Controller, ReqData) ->
-    case default(Fun) of
-        no_default ->
-            {error, {error, no_default, Fun}, Controller, ReqData};
-        Default ->
-            {Default, Controller, ReqData}
-    end.
-
-controller_call(F, {Mod, State}, ReqData) ->
-    {Res, ReqData1, State1} = Mod:F(ReqData, State),
-    {Res, {Mod, State1}, ReqData1}.
-    
-log_d(DecisionID, {Mod, State}, ReqData) ->
-    handle_event(Mod, decision, [DecisionID, ReqData], State).
-
-handle_event(Mod, Name, EventArgs, State) ->
-    try
-        Mod:handle_event(Name, EventArgs, State)
-    catch
-        EvClass:EvError ->
-            error_logger:error_msg("~p:handle_event/3 crashed ~p:~p~n~p",
-                                   [Mod, EvClass, EvError,
-                                    erlang:get_stacktrace()])
-    end.
-
-
-
-
-% log_reqid(false, _ReqId) ->
-%     nop;
-% log_reqid(LoggerProc, ReqId) ->
-%     z_logger:log(LoggerProc, 5, "{req_id, ~p}.~n", [ReqId]).
-
-% log_decision(false, _DecisionID) ->
-%     nop;
-% log_decision(LoggerProc, DecisionID) ->
-%     z_logger:log(LoggerProc, 5, "{decision, ~p}.~n", [DecisionID]).
-
-% log_call(false, _Type, _M, _F, _Data) ->
-%     nop;
-% log_call(LoggerProc, Type, M, F, Data) ->
-%     z_logger:log(LoggerProc, 5,
-%                  "{~p, ~p, ~p,~n ~p}.~n",
-%                  [Type, M, F, escape_trace_data(Data)]).
-
-% escape_trace_data(Fun) when is_function(Fun) ->
-%     {'WMTRACE_ESCAPED_FUN',
-%      [erlang:fun_info(Fun, module),
-%       erlang:fun_info(Fun, name),
-%       erlang:fun_info(Fun, arity),
-%       erlang:fun_info(Fun, type)]};
-% escape_trace_data(Pid) when is_pid(Pid) ->
-%     {'WMTRACE_ESCAPED_PID', pid_to_list(Pid)};
-% escape_trace_data(Port) when is_port(Port) ->
-%     {'WMTRACE_ESCAPED_PORT', erlang:port_to_list(Port)};
-% escape_trace_data(List) when is_list(List) ->
-%     escape_trace_list(List, []);
-% escape_trace_data(Tuple) when is_tuple(Tuple) ->
-%     list_to_tuple(escape_trace_data(tuple_to_list(Tuple)));
-% escape_trace_data(Other) ->
-%     Other.
-
-% escape_trace_list([Head|Tail], Acc) ->
-%     escape_trace_list(Tail, [escape_trace_data(Head)|Acc]);
-% escape_trace_list([], Acc) ->
-%     %% proper, nil-terminated list
-%     lists:reverse(Acc);
-% escape_trace_list(Final, Acc) ->
-%     %% non-nil-terminated list, like the dict module uses
-%     lists:reverse(tl(Acc))++[hd(Acc)|escape_trace_data(Final)].
-
-% start_log_proc(Dir, Mod, Eagerness) ->
-%     Now = {_,_,US} = os:timestamp(),
-%     {{Y,M,D},{H,I,S}} = calendar:now_to_universal_time(Now),
-%     Filename = io_lib:format(
-%         "~s/~p-~4..0B-~2..0B-~2..0B"
-%         "-~2..0B-~2..0B-~2..0B.~6..0B.wmtrace",
-%         [Dir, Mod, Y, M, D, H, I, S, US]),
-%     z_logger:start([{output, {file, Filename}},
-%                     {eagerness, Eagerness}, {loglevel, 5}]).
-
-% stop_log_proc(LogProc, ReqData) when is_pid(LogProc) and is_tuple(ReqData) ->
-%     ResponseCode = (ReqData#wm_reqdata.log_data)#wm_log_data.response_code,
-%     z_logger:stop(LogProc, ResponseCode);
-% stop_log_proc(_, _) ->
-%     ok.
