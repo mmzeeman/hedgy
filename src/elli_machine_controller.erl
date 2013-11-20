@@ -143,10 +143,18 @@ controller_call(F, {Mod, State}, ReqData) ->
     {Res, ReqData1, State1} = Mod:F(ReqData, State),
     {Res, {Mod, State1}, ReqData1}.
     
-log_d(_DecisionID, {_Mod, _State}, _ReqData) ->
-    % io:fwrite(standard_error, "log_d ~p: ~p~n", [_Mod, _DecisionID]),
-    % log_decision(Trace, DecisionID).
-    ok.
+log_d(DecisionID, {Mod, State}, ReqData) ->
+    handle_event(Mod, decision, [DecisionID, ReqData], State).
+
+handle_event(Mod, Name, EventArgs, State) ->
+    try
+        Mod:handle_event(Name, EventArgs, State)
+    catch
+        EvClass:EvError ->
+            error_logger:error_msg("~p:handle_event/3 crashed ~p:~p~n~p",
+                                   [Mod, EvClass, EvError,
+                                    erlang:get_stacktrace()])
+    end.
 
 
 
