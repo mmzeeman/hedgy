@@ -1,20 +1,27 @@
+
 digraph ControllerFSM {
-    rankdir = LR;
+    // rankdir = LR;
+
+    node [shape=box style=rounded];
 
     subgraph _cluster_500_responses {
-        node [shape=box];
+        node [shape=rect style=solid color=red];
         error 500 501 503;
-    }
+    };
 
     subgraph _cluster_400_responses {
-        node [shape=box];
+        node [shape=rect style=solid color=orange];
         400 401 403 404 405 406 409 410 412 413 414 415;
-    }
+    };
 
-    subgraph _cluster_results {
-        node [shape=box];
-        nop halt upgrade respond 200 201 204 
-        300 301 303 304 307;
+    subgraph _cluster_200_300_results {
+        node [shape=rect style=solid color=green];
+        200 201 204 300 301 303 304 307;
+    };
+
+    subgraph _cluster_answer {
+        node [shape=rect style=solid];
+        nop halt upgrade respond
     };
 
     start [shape=Mdiamond]; 
@@ -25,205 +32,278 @@ digraph ControllerFSM {
     v3b13 -> 503 [label="!pong"];
     
     v3b13b [label="v3b13b\nservice_available?"];
-    v3b13b -> v3b12 [label="true"];
+    v3b13b -> v3b12 [label="true" style=bold];
     v3b13b -> 503 [label="false"];
 
     v3b12 [label="v3b12\nknown_methods"];
-    v3b12 -> v3b11 [label = "known method"];
+    v3b12 -> v3b11 [label = "known method" style=bold];
     v3b12 -> 501 [label="unknown method"];
 
     v3b11 [label="v3b11\nuri_too_long"];
-    v3b11 -> v3b10 [label="false"];
+    v3b11 -> v3b10 [label="false" style=bold];
     v3b11 -> 414 [label="true"];
 
     v3b10 [label="v3b10\nallowed_methods"];
-    v3b10 -> v3b9 [label="true"]; 
+    v3b10 -> v3b9 [label="true" style=bold]; 
     v3b10 -> 405 [label="false"]; 
 
     v3b9 [label="v3b9\nmalformed_request"];
-    v3b9 -> v3b8 [label="false"];
+    v3b9 -> v3b8 [label="false" style=bold];
     v3b9 -> 400 [label="true"];
  
     v3b8 [label="v3b8\nis_authorized"];
-    v3b8 -> v3b7;
-    v3b8 -> error;
-    v3b8 -> halt;
-    v3b8 -> 401;
+    v3b8 -> v3b7 [label="true" style=bold];
+    v3b8 -> 401 [label="false"];
+    v3b8 -> error [style="dotted"];
+    v3b8 -> halt [style="dotted"];
 
     v3b7 [label="v3b7\nforbidden"]
-    v3b7 -> v3b6_upgrade [label="false"];
+    v3b7 -> v3b6_upgrade [label="false" style=bold];
     v3b7 -> 403 [label="true"];
 
-    v3b6_upgrade -> v3b6;
-    v3b6_upgrade -> upgrade;
+    v3b6 [label="v3b6\nchoose_upgrade"];
+    v3b6_upgrade -> v3b6 [label="none"];
+    v3b6_upgrade -> upgrade [label="chosen"];
 
-    v3b6 -> v3b5;
-    v3b6 -> 501;
+    v3b6 [label="v3b6\nvalid_content_headers"];
+    v3b6 -> v3b5 [label="true" style=bold];
+    v3b6 -> 501 [label="false"];
 
-    v3b5 -> v3b4;
-    v3b5 -> 415;
+    v3b5 [label="v3b5\nknown_content_type"];
+    v3b5 -> v3b4 [label="true" style=bold];
+    v3b5 -> 415 [label="false"];
 
-    v3b4 -> v3b3;
-    v3b4 -> 413;
+    v3b4 [label="v3b4\nvalid_entity_length"];
+    v3b4 -> v3b3 [label="true" style=bold];
+    v3b4 -> 413 [label="false"];
 
-    v3b3 -> v3c3;
-    v3b3 -> 200;
+    v3b3 [label="v3b3\noptions"];
+    v3b3 -> v3c3 [label="[option()]"];
+    v3b3 -> 200 [label="[]" style=bold];
 
-    v3c3 -> v3d4;
-    v3c3 -> v3c4;
+    v3c3 [label="v3c3\ncheck Accept header"];
+    v3c3 -> v3d4 [label="no header\nuse content_types_provided"];
+    v3c3 -> v3c4 [label="check accept header"];
 
-    v3c4 -> v3d4;
-    v3c4 -> 406;
+    v3c4 [label="v3c4\nchoose_media_type"];
+    v3c4 -> v3d4 [label="use chosen media type"];
+    v3c4 -> 406 [label="no media type chosen"];
 
-    v3d4 -> v3e5;
-    v3d4 -> v3d5;
+    v3d4 [label="v3d4\nhas Accept-Language header"];
+    v3d4 -> v3e5 [label="false"];
+    v3d4 -> v3d5 [label="true"];
  
-    v3d5 -> v3e5;
-    v3d5 -> 406;
+    v3d5 [label="v3d5\nlanguage_available"];
+    v3d5 -> v3e5 [label="true"];
+    v3d5 -> 406 [label="false"];
 
-    v3e5 -> v3f6;
-    v3e5 -> v3e6;
-    v3e5 -> 406;
+    v3e5 [label="v3e5\ncheck \"Accept-Charset\" header"]
+    v3e5 -> v3f6 [label="no header, accept *"];
+    v3e5 -> 406 [label="no header, don't accept *"];
+    v3e5 -> v3e6 [label="got header"]; 
 
-    v3e6 -> v3f6;
-    v3e6 -> 406; 
+    v3e6 [label="v3e6\nchoose_charset"];
+    v3e6 -> v3f6 [label="accepted charset"];
+    v3e6 -> 406 [label="no acceptable charset"]; 
    
-    v3f6 -> v3g7;
+    v3f6 [label="v3f6\ncheck acceptable encoding exists"];
+    v3f6 -> v3g7 ;
     v3f6 -> v3f7;
     v3f6 -> 406;
 
-    v3f7 -> v3g7;
-    v3f7 -> 406;
+    v3f7 [label="v3f7\nchoose encoding" shape=oval];
+    v3f7 -> v3g7 [label="got an encoding"];
+    v3f7 -> 406 [label="no acceptable encoding"];
  
-    v3g7 -> v3g8;
-    v3g7 -> v3h7;
+    v3g7 [label="v3g7\nresource_exists"]
+    v3g7 -> v3g8 [label="true" style=bold];
+    v3g7 -> v3h7 [label="false"];
 
-    v3g8 -> v3g9;
-    v3g8 -> v3h10;
+    v3g8 [label="v3g8\nIf-Match exists?" shape=oval];
+    v3g8 -> v3g9 [label=exists];
+    v3g8 -> v3h10 [label=undefined];
 
-    v3g9 -> v3h10;
-    v3g9 -> v3g11;
+    v3g9 [label="v3g9\nIf-Match: * exists" shape=oval];
+    v3g9 -> v3h10 [label=true];
+    v3g9 -> v3g11 [label=false];
 
+    v3g11 [label="v3g11\ngenerate_etag"]
     v3g11 -> v3h10;
+    v3g11 -> 412;
 
+    v3h7 [label="If-Match: * exists" shape=oval];
     v3h7 -> v3i7;
     v3h7 -> 412;
 
+    v3h10 [label="If-unmodified-since exists?" shape=oval];
     v3h10 -> v3i12;
     v3h10 -> v3h11;
     
+    v3h11 [label="I-UM-S is valid date?" shape=oval];
     v3h11 -> v3i12;
     v3h11 -> v3h12;
 
+    v3h12 [label="last_modified"];
     v3h12 -> v3i12;
-    v3h12 -> 412;
+    v3h12 -> 412 [label="request date > last_modified date"];
 
-    v3i4 -> v3p3;
-    v3i4 -> error; 
-    v3i4 -> halt; 
-    v3i4 -> 301;
+    v3i4 [label="v3i4\nmoved_permanently"];
+    v3i4 -> v3p3 [label="false" style=bold];
+    v3i4 -> 301 [label="true"];
+    v3i4 -> error [style=dotted]; 
+    v3i4 -> halt [style=dotted]; 
+    
+    v3i7 [label="v3i7\nPUT?" shape=oval]
+    v3i7 -> v3i4 [label="true"];
+    v3i7 -> v3k7 [label="false"];
 
-    v3i7 -> v3i4;
-    v3i7 -> v3k7;
+    v3i12 [label="v3i12\nIf-none-match exists?" shape=oval];
+    v3i12 -> v3l13 [label="false"];
+    v3i12 -> v3i13 [label="true"];
 
-    v3i12 -> v3l13;
-    v3i12 -> v3i13;
-
+    v3i13 [label="v3i13\nIf-None-Match: * exists?" shape=oval];
     v3i13 -> v3j18;
     v3i13 -> v3k13;
  
-    v3j18 -> 304;
-    v3j18 -> 412;
+    v3j18 [label="v3j18\nGET or HEAD?" shape=oval];
+    v3j18 -> 304 [label=true];
+    v3j18 -> 412 [label=false];
 
-    v3k5 -> v3l5;
-    v3k5 -> error;
-    v3k5 -> halt;
-    v3k5 -> 301;
+    v3k5 [label="v3k5\nmoved_permanently"];
+    v3k5 -> v3l5 [label="false" style=bold];
+    v3k5 -> 301 [label="true"];
+    v3k5 -> error [style=dotted];
+    v3k5 -> halt [style=dotted];
 
-    v3k7 -> v3k5;
-    v3k7 -> v3l7;
+    v3k7 [label="v3k7\npreviously_existed"];
+    v3k7 -> v3k5 [label="true"];
+    v3k7 -> v3l7 [label="false" style=bold];
 
+    v3k13 [label="v3k13\ngenerate_etag"];
     v3k13 -> v3j18;
     v3k13 -> v3l13;
 
-    v3l5 -> v3m5;
-    v3l5 -> error;
-    v3l5 -> halt;
-    v3l5 -> 307;
+    v3l5 [label="v3l5\nmoved_temporarily"]
+    v3l5 -> v3m5 [label="false" style=bold];
+    v3l5 -> 307 [label="true"];
+    v3l5 -> error [style=dotted];
+    v3l5 -> halt [style=dotted];
 
+    v3l7 [label="v3l7\nPOST?" shape=oval];
     v3l7 -> v3m7;
     v3l7 -> 404;
 
+    v3l13 [label="v3l13\nIMS exists?" shape=oval];
     v3l13 -> v3m16;
     v3l13 -> v3l14;
 
+    v3l14 [label="v3l14\nIMS is valid date?" shape=oval];
     v3l14 -> v3m16;
     v3l14 -> v3l15;
 
+    v3l15 [label="v3l15\nIMS > Now?" shape=oval];
     v3l15 -> v3m16;
     v3l15 -> v3l17;
 
+    v3l17 [label="v3l17\nLast-Modified > IMS?" shape=oval];
     v3l17 -> v3m16;
     v3l17 -> 304;
 
+    v3m5 [label="v3m5\nPOST?" shape=oval];
     v3m5 -> v3n5; 
     v3m5 -> 410;
 
-    v3m7 -> v3n11;
-    v3m7 -> 404;
+    v3m7 [label="v3m7\nallow_missing_post" shape=oval];
+    v3m7 -> v3n11 [label="true"];
+    v3m7 -> 404 [label="false" style=bold];
  
+    v3m16 [label="v3m16\nDELETE?" shape=oval];
     v3m16 -> v3m20;
     v3m16 -> v3n16;
 
-    v3m20 -> v3m20b;
-    v3m20 -> 500;
+    v3m20 [label="v3m20\ndelete_resource"]
+    v3m20 -> v3m20b [label=true];
+    v3m20 -> 500 [label=false style=bold];
 
-    v3m20b -> v3n11;
-    v3m20b -> 410;
+    v3m20b [label="v3m20b\ndelete_completed"]
+    v3m20b -> v3n11 [label=false];
+    v3m20b -> 410 [label=true style=bold];
 
-    v3n5 -> v3n11;
-    v3n5 -> 410;
+    v3n5 [label="v3n5\nallow_missing_post"]
+    v3n5 -> v3n11 [label=false style=bold];
+    v3n5 -> 410 [label=true];
     
+    v3n11 [label="v3n11\nRedirect?"]
     v3n11 -> 500;
     v3n11 -> 303;
-    v3n11 -> error;
-    v3n11 -> halt;
-    v3n11 -> nop;
+    v3n11 -> error [style=dotted];
+    v3n11 -> halt [style=dotted];
+    v3n11 -> nop [style=dotted];
 
+    v3n16 [label="v3n16\nPOST?"];
     v3n16 -> v3n11;
     v3n16 -> v3o16;
 
-    v3o14 -> v3p11;
-    v3o14 -> 409;
-    v3o14 -> respond;
-    v3o14 -> halt;
-    v3o14 -> error;
+    v3o14 [label="v3o14\nis_conflict"];
+    v3o14 -> 409 [label="true"];
+    v3o14 -> v3p11 [label="false" style=bold];
+    v3o14 -> respond [style=dotted];
+    v3o14 -> halt [style=dotted];
+    v3o14 -> error [style=dotted];
 
+    v3o16 [label="v3o16\nPUT?" shape=oval];
     v3o16 -> v3o14;
     v3o16 -> v3o18;
 
-    v3o18 -> error;
-    v3o18 -> halt;
-    v3o18 -> respond;
+    v3o18 [label="v3o18\nMultiple representations?" shape=oval];
     v3o18 -> v3o18b;
-  
-    v3o18b -> 200;
-    v3o18b -> 300;
+    v3o18 -> error [style=dotted];
+    v3o18 -> halt [style=dotted];
+    v3o18 -> respond [style=dotted];
+    
+    v3o18b [label="v3o18b\nmultiple_choices"];
+    v3o18b -> 200 [label="false" style=bold];
+    v3o18b -> 300 [label="true"];
 
-    v3o20 -> v3o18;
-    v3o20 -> 204;
+    v3o20 [label="Has response body?" shape=oval];
+    v3o20 -> v3o18 [label="true"];
+    v3o20 -> 204 [label="false"];
 
-    v3p3 -> respond;
-    v3p3 -> halt;
-    v3p3 -> error;
-    v3p3 -> 409;
-    v3p3 -> v3p11
+    v3p3 [label="v3p3\nis_conflict"];
+    v3p3 -> v3p11 [label="false" style=bold];
+    v3p3 -> 409 [label="true"];
+    v3p3 -> respond [style=dotted];
+    v3p3 -> halt [style=dotted];
+    v3p3 -> error [style=dotted];
+    
+    v3p11 [label="v3p11\nnew controller?" shape=oval];
+    v3p11 -> v3o20 [label=true];
+    v3p11 -> 201 [label=false];
 
-    v3p11 -> v3o20;
-    v3p11 -> 201;
-  
+    200 [label="200\nOK"];
+    201 [label="201\nCreated"];
+    204 [label="204\nNo Content"];
+
+    300 [label="300\nMultiple Choices"];
+    301 [label="301\nMoved Permanently"];
+    303 [label="303\nSee Other"];
+    304 [label="304\nNot Modified"];
+    307 [label="307\nTemporary Redirect"];
+
+    400 [label="400\nBad Request"];
+    401 [label="401\nUnauthorized"];
+    403 [label="403\nForbidden"];
+    404 [label="404\nNot Found"];
+    405 [label="405\nMethod Not Allowed"];
+    406 [label="406\nNot Acceptable"];
+    409 [label="409\nConflict"];
+    410 [label="410\nGone"];
+    412 [label="412\nPrecondition Failed"];
+    413 [label="413\nRequest Entity Too Large"]
+    414 [label="414\nRequest-URI Too Long"];
+    415 [label="415\nUnsupported Media Type"];
+
     500 [label="500\nInternal Server Error"];
     501 [label="501\nNot Implemented"];
-    502 [label="502\nBad Gateway"];
-    503 [label="503\nService Unavailable"];
+    503 [label="503\nService Unavailable"];       
 }
