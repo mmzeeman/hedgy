@@ -229,14 +229,14 @@ decision(v3b3, Rs, Rd) ->
     end;
 %% Accept exists?
 decision(v3c3, Rs, Rd) ->
-    {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
-    PTypes = [Type || {Type,_Fun} <- ContentTypes],
-    case emr:get_req_header_lc(<<"Accept">>, Rd1) of
+    case emr:get_req_header_lc(<<"Accept">>, Rd) of
         undefined ->
+            {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
+            PTypes = [Type || {Type,_Fun} <- ContentTypes],
             {ok, RdCT} = emr:set_metadata('content-type', hd(PTypes), Rd1),
             d(v3d4, Rs1, RdCT);
         _ ->
-            d(v3c4, Rs1, Rd1)
+            d(v3c4, Rs, Rd)
     end;
 %% Acceptable media type available?
 decision(v3c4, Rs, Rd) ->
