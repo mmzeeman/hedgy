@@ -77,19 +77,19 @@ digraph ControllerFSM {
     v3b4 -> v3b3 [label="true" style=bold];
     v3b4 -> 413 [label="false"];
 
-    v3b3 [label="v3b3\noptions"];
-    v3b3 -> v3c3 [label="[option()]"];
-    v3b3 -> 200 [label="[]" style=bold];
+    v3b3 [label="v3b3\nis OPTIONS request?" shape=oval];
+    v3b3 -> v3c3 [label="false, [option()]"];
+    v3b3 -> 200 [label="true, call options"];
 
-    v3c3 [label="v3c3\ncheck Accept header"];
-    v3c3 -> v3d4 [label="no header\nuse content_types_provided"];
-    v3c3 -> v3c4 [label="check accept header"];
+    v3c3 [label="v3c3\nhas Accept header?" shape=oval];
+    v3c3 -> v3d4 [label="false\ncall content_types_provided"];
+    v3c3 -> v3c4 [label="true, check accept header"];
 
     v3c4 [label="v3c4\nchoose_media_type"];
     v3c4 -> v3d4 [label="use chosen media type"];
     v3c4 -> 406 [label="no media type chosen"];
 
-    v3d4 [label="v3d4\nhas Accept-Language header"];
+    v3d4 [label="v3d4\nhas Accept-Language header?" shape=oval];
     v3d4 -> v3e5 [label="false"];
     v3d4 -> v3d5 [label="true"];
  
@@ -97,15 +97,10 @@ digraph ControllerFSM {
     v3d5 -> v3e5 [label="true"];
     v3d5 -> 406 [label="false"];
 
-    v3e5 [label="v3e5\ncheck \"Accept-Charset\" header"]
-    v3e5 -> v3f6 [label="no header, accept *"];
-    v3e5 -> 406 [label="no header, don't accept *"];
-    v3e5 -> v3e6 [label="got header"]; 
-
-    v3e6 [label="v3e6\nchoose_charset"];
-    v3e6 -> v3f6 [label="accepted charset"];
-    v3e6 -> 406 [label="no acceptable charset"]; 
-   
+    v3e5 [label="v3e5\naccept_charset"]
+    v3e5 -> v3f6 [label="acceptable charset"];
+    v3e5 -> 406 [label="no acceptable charset"];
+    
     v3f6 [label="v3f6\ncheck acceptable encoding exists"];
     v3f6 -> v3g7 ;
     v3f6 -> v3f7;
@@ -131,19 +126,19 @@ digraph ControllerFSM {
     v3g11 -> v3h10;
     v3g11 -> 412;
 
-    v3h7 [label="If-Match: * exists" shape=oval];
+    v3h7 [label="v3h7\nIf-Match: * exists" shape=oval];
     v3h7 -> v3i7;
     v3h7 -> 412;
 
-    v3h10 [label="If-unmodified-since exists?" shape=oval];
+    v3h10 [label="v3h10\nIf-unmodified-since exists?" shape=oval];
     v3h10 -> v3i12;
     v3h10 -> v3h11;
     
-    v3h11 [label="I-UM-S is valid date?" shape=oval];
+    v3h11 [label="v3h11\nI-UM-S is valid date?" shape=oval];
     v3h11 -> v3i12;
     v3h11 -> v3h12;
 
-    v3h12 [label="last_modified"];
+    v3h12 [label="v3h12\nlast_modified"];
     v3h12 -> v3i12;
     v3h12 -> 412 [label="request date > last_modified date"];
 
@@ -213,7 +208,7 @@ digraph ControllerFSM {
     v3m5 -> v3n5; 
     v3m5 -> 410;
 
-    v3m7 [label="v3m7\nallow_missing_post" shape=oval];
+    v3m7 [label="v3m7\nallow_missing_post"];
     v3m7 -> v3n11 [label="true"];
     v3m7 -> 404 [label="false" style=bold];
  

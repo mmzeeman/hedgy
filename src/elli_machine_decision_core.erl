@@ -258,13 +258,11 @@ decision(v3d5, Rs, Rd) ->
     decision_test(controller_call(language_available, Rs, Rd), true, v3e5, 406);
 %% Accept-Charset exists?
 decision(v3e5, Rs, Rd) ->
-    case emr:get_req_header_lc(<<"Accept-Charset">>, Rd) of
-        undefined -> decision_test(choose_charset(<<"*">>, Rs, Rd), none, 406, v3f6);
-        _ -> d(v3e6, Rs, Rd)
-    end;
-%% Acceptable Charset available?
-decision(v3e6, Rs, Rd) ->
-    decision_test(choose_charset(emr:get_req_header_lc(<<"Accept-Charset">>, Rd), Rs, Rd), none, 406, v3f6);
+    AcceptCharset = case emr:get_req_header_lc(<<"Accept-Charset">>, Rd) of
+        undefined -> <<"*">>;
+        Ac -> Ac
+    end,
+    decision_test(choose_charset(AcceptCharset, Rs, Rd), none, 406, v3f6);    
 %% Accept-Encoding exists?
 % (also, set content-type header here, now that charset is chosen)
 decision(v3f6, Rs, Rd) ->
@@ -630,6 +628,7 @@ encode_body(Body, Rs, Rd) ->
     ChosenEnc = emr:get_metadata('content-encoding', Rd1),
     {EncodingsProvided, Rs2, Rd2} = controller_call(encodings_provided, Rs1, Rd1),
     Encoder = hd([Fun || {Enc,Fun} <- EncodingsProvided, ChosenEnc =:= Enc]),
+    %% TODO, change this for elli.
     case Body of
         {stream, StreamBody} ->
             {{stream, make_encoder_stream(Encoder, Charsetter, StreamBody)}, Rs2, Rd2};
