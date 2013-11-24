@@ -1,7 +1,7 @@
 
 digraph ControllerFSM {
     // rankdir = LR;
-
+    // splines=line;
     node [shape=box style=rounded];
 
     subgraph _cluster_500_responses {
@@ -23,6 +23,9 @@ digraph ControllerFSM {
         node [shape=rect style=solid];
         nop halt upgrade respond
     };
+
+    // { rank=same v3b13 v3b13b v3b12 v3b11 v3b10 v3b9 v3b8 v3b7 v3b6 v3b5 v3b4};
+    //{ rank=same v3b7 v3b6 v3b5 v3b4 }
 
     start [shape=Mdiamond]; 
     start -> v3b13;
@@ -58,8 +61,8 @@ digraph ControllerFSM {
     v3b8 -> halt [style="dotted"];
 
     v3b7 [label="v3b7\nforbidden"]
-    v3b7 -> v3b6_upgrade [label="false" style=bold];
     v3b7 -> 403 [label="true"];
+    v3b7 -> v3b6_upgrade [label="false" style=bold];
 
     v3b6 [label="v3b6\nchoose_upgrade"];
     v3b6_upgrade -> v3b6 [label="none"];

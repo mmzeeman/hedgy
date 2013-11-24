@@ -119,4 +119,5 @@ addition to whichever of these a controller wishes to use, it also must
 export all of the functions named in the return values of the
 `content_types_provided` and `content_types_accepted` functions.
 
+![Request Diagram](doc/graph.png "Request Diagram")
 
