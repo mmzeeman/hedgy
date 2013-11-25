@@ -16,14 +16,14 @@ Controllers are modules with a set of functions which you can use to define the 
 init(Request, Args) -> {ok, Context} 
 ```
 
-All controllers should define and export init/1, which will receive a configuration property list from the dispatcher as its argument. This function should, if successful, return {ok, Context}. Context is any term, and will be threaded through all of
+All controllers should define and export init/2, which will receive a configuration property list from the dispatcher as its argument. This function should, if successful, return {ok, Context}. Context is any term, and will be threaded through all of
 the other Webmachine resource functions. 
 
 ```erlang
 handle_event(Name, EventArgs, Context) -> ok.
 ```
 
-All controllers should define and export handle_event/1, which will
+All controllers should define and export handle_event/3, which will
 receive events from the http decision core. This can be used during debugging or collection of statistics.
 
 ```erlang
