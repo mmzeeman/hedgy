@@ -58,7 +58,7 @@ cacheable(_) -> false.
 
 
 d(DecisionID, Controller, ReqData) ->
-    elli_machine_controller:handle_event(Controller, decision, [DecisionID, ReqData]),
+    elli_machine_controller:handle_event(Controller, core_decision, [DecisionID, ReqData]),
     decision(DecisionID, Controller, ReqData).
 
 respond(Code, Controller, ReqData) ->
@@ -95,9 +95,10 @@ error_response(Reason, Controller, ReqData) ->
     error_response(500, Reason, Controller, ReqData).
 
 error_response(Code, Reason, Controller, ReqData) ->
-    {ErrorHTML, Ct1, Rd1} = elli_machine_controller:render_error(Controller, Code, ReqData, Reason),
+    elli_machine_controller:handle_event(Controller, core_error, [Code, Reason, ReqData]),
+    {ErrorHTML, Ctrl1, Rd1} = elli_machine_controller:render_error(Controller, Code, Reason, ReqData),
     Rd2 = emr:set_resp_body(ErrorHTML, Rd1),
-    respond(Code, Ct1, Rd2).
+    respond(Code, Ctrl1, Rd2).
 
 decision_test({Test, Controller, ReqData}, TestVal, TrueFlow, FalseFlow) ->
     decision_test(Test, TestVal, TrueFlow, FalseFlow, Controller, ReqData).
@@ -470,8 +471,14 @@ decision(v3n11, Rs, Rd) ->
                 true -> 
                     {_, Rs3, Rd3} = encode_body_if_set(Rs2, Rd2),
                     {stage1_ok, Rs3, Rd3};
-                {halt, Code} -> respond(Code, Rs2, Rd2);
-                Err -> error_response(Err, Rs2, Rd2)
+                {halt, Code} -> 
+                    respond(Code, Rs2, Rd2);
+                {error, Reason} -> 
+                    error_response({error, Reason}, Rs2, Rd2);
+                {error, Reason0, Reason1} -> 
+                    error_response({error, {Reason0, Reason1}}, Rs2, Rd2);
+                Err -> 
+                    error_response({error, "process_post unexpected response", Err}, Rs2, Rd2)
             end
     end,
     case Stage1 of

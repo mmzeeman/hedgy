@@ -39,8 +39,7 @@
 % @doc Intitialize controller Mod.
 -spec init(module(), any()) -> {ok, {module(), any()}}.  
 init(Mod, ModArgs) ->
-    {ok, State} = Mod:init(ModArgs),
-    {ok, {Mod, State}}.
+    {ok, State} = Mod:init(ModArgs).
 
 do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
@@ -56,7 +55,8 @@ handle_event({Mod, State}, Name, EventArgs) ->
 render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
     case erlang:function_exported(Mod, render_error, 4) of
         true ->
-            Mod:render_error(Code, Reason, ReqData, State);
+            {ErrorHtml, ReqData1, State1} = Mod:render_error(Code, Reason, ReqData, State),
+            {ErrorHtml, {Mod, State1}, ReqData1};
         false ->
             {ErrorHtml, ReqData1} = elli_machine_error_handler:render_error(Code, Reason, ReqData),
             {ErrorHtml, Controller, ReqData1}
@@ -74,7 +74,7 @@ controller_call(F, {Mod, State}, ReqData) ->
 use_default(Fun, Controller, ReqData) ->
     case default(Fun) of
         no_default ->
-            {error, {error, no_default, Fun}, Controller, ReqData};
+            {{error, {no_default, Fun, Controller}}, Controller, ReqData};
         Default ->
             {Default, Controller, ReqData}
     end.
@@ -126,7 +126,7 @@ default(create_path) ->
 default(base_uri) ->
     undefined;
 default(process_post) ->
-    false;
+    no_default;
 default(language_available) ->
     true;
 default(charsets_provided) ->
