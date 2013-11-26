@@ -31,7 +31,9 @@
 
     set_resp_code/2,
     set_resp_header/3,
+
     set_resp_body/2,
+    get_resp_body/1,
 
     has_resp_body/1,
 
@@ -64,15 +66,25 @@ get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
             elli_bstr:to_lower(Val)
     end.
 
-
+% @doc Set the response code of the request
 set_resp_code(Code, ReqData) ->
     ReqData#machine_reqdata{resp_code=Code}.
 
+% @doc Set a response header.
 set_resp_header(Header, Value, #machine_reqdata{resp_headers=RespHeaders}=ReqData) ->
     ReqData#machine_reqdata{resp_headers=[{Header, Value}|RespHeaders]}.
 
+% @doc Get a response header
+get_resp_header(Key, #machine_reqdata{resp_headers=RespHeaders}) ->
+    proplists:get_value(Key, RespHeaders).
+
+% @doc Set the response body.
 set_resp_body(Body, ReqData) ->
     ReqData#machine_reqdata{resp_body=Body}.
+
+% @doc Get the response body.
+get_resp_body(ReqData) ->
+    ReqData#machine_reqdata.resp_body.
 
 % @doc Returns true iff the request has a response body.
 has_resp_body(#machine_reqdata{resp_body=undefined}) ->

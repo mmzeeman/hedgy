@@ -1,9 +1,7 @@
 
 digraph ControllerFSM {
-    // rankdir = LR;
-    // splines=line;
     splines=ortho;
-    overlap_shrink=true;
+    
     node [shape=box style=rounded];
 
     subgraph _cluster_500_responses {
@@ -18,7 +16,7 @@ digraph ControllerFSM {
 
     subgraph _cluster_200_300_results {
         node [shape=rect style=solid color=green];
-        200 201 204 300 301 303 304 307;
+        200 201 202 204 300 301 303 304 307;
     };
 
     subgraph _cluster_answer {
@@ -27,8 +25,7 @@ digraph ControllerFSM {
     };
 
     { rank=same v3b13 v3b13b v3b12 v3b11 v3b10 v3b9  };
-    //{ rank=same v3b7 v3b6 v3b5 v3b4 }
-
+    
     start [shape=Mdiamond]; 
     start -> v3b13;
 
@@ -132,8 +129,8 @@ digraph ControllerFSM {
     v3g11 -> 412;
 
     v3h7 [label="v3h7\nIf-Match: * exists" shape=oval];
-    v3h7 -> v3i7;
-    v3h7 -> 412;
+    v3h7 -> 412 [label=true];
+    v3h7 -> v3i7 [label=false];
 
     v3h10 [label="v3h10\nIf-unmodified-since exists?" shape=oval];
     v3h10 -> v3i12;
@@ -218,17 +215,16 @@ digraph ControllerFSM {
     v3m7 -> 404 [label="false" penwidth=3];
  
     v3m16 [label="v3m16\nDELETE?" shape=oval];
-    v3m16 -> v3n16;
-    v3m16 -> v3m20;
+    v3m16 -> v3m20 [label=true];
+    v3m16 -> v3n16 [label=false];
     
-
     v3m20 [label="v3m20\ndelete_resource"]
     v3m20 -> v3m20b [label=true];
     v3m20 -> 500 [label=false penwidth=3];
 
-    v3m20b [label="v3m20b\ndelete_completed"]
-    v3m20b -> v3n11 [label=false];
-    v3m20b -> 410 [label=true penwidth=3];
+    v3m20b [label="v3m20b\ndelete_completed"];
+    v3m20b -> 202 [label=false];
+    v3m20b -> v3o20 [label=true penwidth=3];
 
     v3n5 [label="v3n5\nallow_missing_post"]
     v3n5 -> v3n11 [label=false penwidth=3];
@@ -242,8 +238,8 @@ digraph ControllerFSM {
     v3n11 -> nop [style=dotted];
 
     v3n16 [label="v3n16\nPOST?"];
-    v3n16 -> v3n11;
-    v3n16 -> v3o16;
+    v3n16 -> v3n11 [label=true];
+    v3n16 -> v3o16 [label=false];
 
     v3o14 [label="v3o14\nis_conflict"];
     v3o14 -> 409 [label="true"];
@@ -253,8 +249,8 @@ digraph ControllerFSM {
     v3o14 -> error [style=dotted];
 
     v3o16 [label="v3o16\nPUT?" shape=oval];
-    v3o16 -> v3o14;
-    v3o16 -> v3o18;
+    v3o16 -> v3o14 [label=true];
+    v3o16 -> v3o18 [label=false];
 
     v3o18 [label="v3o18\nMultiple representations?" shape=oval];
     v3o18 -> v3o18b;
@@ -266,7 +262,7 @@ digraph ControllerFSM {
     v3o18b -> 200 [label="false" penwidth=3];
     v3o18b -> 300 [label="true"];
 
-    v3o20 [label="Has response body?" shape=oval];
+    v3o20 [label="v3o20\nHas response body?" shape=oval];
     v3o20 -> v3o18 [label="true"];
     v3o20 -> 204 [label="false"];
 
@@ -283,6 +279,7 @@ digraph ControllerFSM {
 
     200 [label="200\nOK"];
     201 [label="201\nCreated"];
+    202 [label="202\nAccepted"];
     204 [label="204\nNo Content"];
 
     300 [label="300\nMultiple Choices"];

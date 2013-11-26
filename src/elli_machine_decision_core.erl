@@ -617,7 +617,7 @@ accept_helper(Rs, Rd) ->
 encode_body_if_set(Rs, Rd) ->
     case emr:has_resp_body(Rd) of
         true ->
-            Body = emr:resp_body(Rd),
+            Body = emr:get_resp_body(Rd),
             {Encoded, Rs1, Rd1} = encode_body(Body, Rs, Rd),
             {true, Rs1, emr:set_resp_body(Encoded, Rd1)};
         _ -> 
