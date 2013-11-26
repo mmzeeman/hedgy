@@ -98,7 +98,7 @@ its return value should be evident from examining the [[Diagram]].
 | `post_is_create` | `false` | |
 | `create_path` | `undefined` | |
 | `base_uri` | `undefined` | |
-| `process_post` | `false` | |
+| `process_post` | `no_default` | |
 | `language_available` | `true` | |
 | `charsets_provided` | `no_charset` | |
 | `encodings_provided` | `[` `{` `<<"identity">>`, `fun(X) -> X end` `}` `]` | |
