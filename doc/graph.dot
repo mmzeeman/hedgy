@@ -20,68 +20,54 @@ digraph ControllerFSM {
     };
 
     subgraph _cluster_answer {
-        node [shape=rect style=solid];
+        node [shape=rect style=solid color=green];
         nop halt upgrade respond
     };
 
-    { rank=same v3b13 v3b13b v3b12 v3b11 v3b10 v3b9  };
-    
     start [shape=Mdiamond]; 
-    start -> v3b13;
+    start -> do_ping;
 
-    v3b13 [label="v3b13\nping"];
-    v3b13 -> v3b13b [label = "pong"];
-    v3b13 -> 503 [label="!pong"];
+    do_ping -> "service_available?" [label = "pong"];
+    do_ping -> 503 [label="!pong"];
     
-    v3b13b [label="v3b13b\nservice_available?"];
-    v3b13b -> v3b12 [label="true" penwidth=3];
-    v3b13b -> 503 [label="false"];
+    "service_available?" -> "known_methods?" [label="true" penwidth=3];
+    "service_available?" -> 503 [label="false"];
 
-    v3b12 [label="v3b12\nknown_methods"];
-    v3b12 -> v3b11 [label="known method" penwidth=3];
-    v3b12 -> 501 [label="unknown method"];
+    "known_methods?" -> "known_method?" [label="known method" penwidth=3];
+    "known_methods?" -> 501 [label="unknown method"];
 
-    v3b11 [label="v3b11\nuri_too_long"];
-    v3b11 -> v3b10 [label="false" penwidth=3];
-    v3b11 -> 414 [label="true"];
+    "known_method?" -> "method_allowed?" [label="false" penwidth=3];
+    "known_method?" -> 414 [label="true"];
 
-    v3b10 [label="v3b10\nallowed_methods"];
-    v3b10 -> v3b9 [label="true" penwidth=3]; 
-    v3b10 -> 405 [label="false"]; 
+    "method_allowed?" -> "malformed_request?" [label="true" penwidth=3]; 
+    "method_allowed?" -> 405 [label="false"]; 
 
-    v3b9 [label="v3b9\nmalformed_request"];
-    v3b9 -> 400 [label=true];
-    v3b9 -> v3b8 [label=false penwidth=3];
+    "malformed_request?" -> 400 [label=true];
+    "malformed_request?" -> "is_authorized?" [label=false penwidth=3];
     
-    v3b8 [label="v3b8\nis_authorized"];
-    v3b8 -> v3b7 [label="true" penwidth=3];
-    v3b8 -> 401 [label="false"];
-    v3b8 -> error [style="dotted"];
-    v3b8 -> halt [style="dotted"];
+    "is_authorized?" -> "forbidden?" [label="true" penwidth=3];
+    "is_authorized?" -> 401 [label="false"];
+    "is_authorized?" -> error [style="dotted"];
+    "is_authorized?" -> halt [style="dotted"];
 
-    v3b7 [label="v3b7\nforbidden"]
-    v3b7 -> 403 [label="true"];
-    v3b7 -> v3b6_upgrade [label="false" penwidth=3];
+    "forbidden?" -> 403 [label="true"];
+    "forbidden?" -> v3b6_upgrade [label="false" penwidth=3];
 
-    v3b6 [label="v3b6\nchoose_upgrade"];
-    v3b6_upgrade -> v3b6 [label="none"];
+    v3b6_upgrade [label="v3b6\nchoose_upgrade"];
+    v3b6_upgrade -> "valid_content_headers?" [label="none"];
     v3b6_upgrade -> upgrade [label="chosen"];
 
-    v3b6 [label="v3b6\nvalid_content_headers"];
-    v3b6 -> v3b5 [label="true" penwidth=3];
-    v3b6 -> 501 [label="false"];
+    "valid_content_headers?" -> "known_content_type?" [label="true" penwidth=3];
+    "valid_content_headers?" -> 501 [label="false"];
 
-    v3b5 [label="v3b5\nknown_content_type"];
-    v3b5 -> v3b4 [label="true" penwidth=3];
-    v3b5 -> 415 [label="false"];
+    "known_content_type?" -> "valid_entity_length?" [label="true" penwidth=3];
+    "known_content_type?" -> 415 [label="false"];
 
-    v3b4 [label="v3b4\nvalid_entity_length"];
-    v3b4 -> v3b3 [label="true" penwidth=3];
-    v3b4 -> 413 [label="false"];
+    "valid_entity_length?" -> "OPTIONS method?" [label="true" penwidth=3];
+    "valid_entity_length?" -> 413 [label="false"];
 
-    v3b3 [label="v3b3\nis OPTIONS request?" shape=oval];
-    v3b3 -> 200 [label="true, call options"];
-    v3b3 -> v3c3 [label="false, [option()]"];
+    "OPTIONS method?" -> 200 [label="true, call options"];
+    "OPTIONS method?" -> v3c3 [label="false, [option()]"];
 
     v3c3 [label="v3c3\nhas Accept header?" shape=oval];
     v3c3 -> v3d4 [label="false\ncall content_types_provided"];
@@ -218,7 +204,7 @@ digraph ControllerFSM {
     v3m16 -> v3m20 [label=true];
     v3m16 -> v3n16 [label=false];
     
-    v3m20 [label="v3m20\ndelete_resource?"]
+    v3m20 [label="v3m20\ndelete_resource"]
     v3m20 -> v3m20b [label=true];
     v3m20 -> 500 [label=false penwidth=3];
 

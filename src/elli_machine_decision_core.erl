@@ -31,7 +31,7 @@
 -include("elli_machine.hrl").
 
 handle_request(Controller, ReqData) ->
-    d(v3b13, Controller, ReqData).
+    d(do_ping, Controller, ReqData).
     
 %% @doc Call the controller or a default.
 %% @spec controller_call(atom(), Resource, ReqData) -> {term(), NewResource, NewReqData}
@@ -144,36 +144,36 @@ decision_flow({ErrCode, Reason}, _TestResult, Rs, Rd) when is_integer(ErrCode) -
 
 
 %% "Service Available"
-decision(v3b13, Rs, Rd) ->
-    decision_test(controller_call(ping, Rs, Rd), pong, v3b13b, 503);
-decision(v3b13b, Rs, Rd) ->     
-    decision_test(controller_call(service_available, Rs, Rd), true, v3b12, 503);
+decision(do_ping, Rs, Rd) ->
+    decision_test(controller_call(ping, Rs, Rd), pong, 'service_available?', 503);
+decision('service_available?', Rs, Rd) ->     
+    decision_test(controller_call(service_available, Rs, Rd), true, 'known_method?', 503);
 %% "Known method?"
-decision(v3b12, Rs, Rd) ->
+decision('known_method?', Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(known_methods, Rs, Rd),
-    decision_test(lists:member(emr:method(Rd1), Methods), true, v3b11, 501, Rs1, Rd1);
+    decision_test(lists:member(emr:method(Rd1), Methods), true, 'uri_too_long?', 501, Rs1, Rd1);
 %% "URI too long?"
-decision(v3b11, Rs, Rd) ->
-    decision_test(controller_call(uri_too_long, Rs, Rd), true, 414, v3b10);
+decision('uri_too_long?', Rs, Rd) ->
+    decision_test(controller_call(uri_too_long, Rs, Rd), true, 414, 'method_allowed?');
 %% "Method allowed?"
-decision(v3b10, Rs, Rd) ->
+decision('method_allowed?', Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(allowed_methods, Rs, Rd),
     case lists:member(emr:method(Rd1), Methods) of
         true ->
-            d(v3b9, Rs1, Rd1);
+            d('malformed_request?', Rs1, Rd1);
         false ->
             RdAllow = emr:set_resp_header(<<"Allow">>, string:join([atom_to_list(M) || M <- Methods], ", "), Rd1),
             respond(405, Rs1, RdAllow)
     end;
 %% "Malformed?"
-decision(v3b9, Rs, Rd) ->
-    decision_test(controller_call(malformed_request, Rs, Rd), true, 400, v3b8);
+decision('malformed_request?', Rs, Rd) ->
+    decision_test(controller_call(malformed_request, Rs, Rd), true, 400, 'is_authorized?');
 %% "Authorized?"
-decision(v3b8, Rs, Rd) ->
+decision('is_authorized?', Rs, Rd) ->
     {IsAuthorized, Rs1, Rd1} = controller_call(is_authorized, Rs, Rd),
     case IsAuthorized of
         true -> 
-            d(v3b7, Rs1, Rd1);
+            d('forbidden?', Rs1, Rd1);
         {error, Reason} ->
             error_response(Reason, Rs1, Rd1);
         {halt, Code}  ->
@@ -183,44 +183,44 @@ decision(v3b8, Rs, Rd) ->
         respond(401, Rs1, RdAuth)
     end;
 %% "Forbidden?"
-decision(v3b7, Rs, Rd) ->
+decision('forbidden?', Rs, Rd) ->
     decision_test(controller_call(forbidden, Rs, Rd), true, 403, v3b6_upgrade);
 %% "Upgrade?"
 decision(v3b6_upgrade, Rs, Rd) ->
     case emr:get_req_header_lc(<<"Upgrade">>, Rd) of
                 undefined ->
-                        d(v3b6, Rs, Rd);
+                        d('valid_content_headers?', Rs, Rd);
                 UpgradeHdr ->
                     case emr:get_req_header_lc(<<"Connection">>, Rd) of
                                 undefined ->
-                                        d(v3b6, Rs, Rd);
+                                        d('valid_content_headers?', Rs, Rd);
                                 Connection ->
                                         case contains_token(<<"upgrade">>, Connection) of
                                                 true ->
                                                         {Choosen, Rs1, Rd1} = choose_upgrade(UpgradeHdr, Rs, Rd),
                                                         case Choosen of
                                                                 none ->
-                                                                        d(v3b6, Rs1, Rd1);
+                                                                        d('valid_content_headers?', Rs1, Rd1);
                                                                 {_Protocol, UpgradeFunc} ->
                                                                         %% TODO: log the upgrade action
                                                                         {upgrade, UpgradeFunc, Rs1, Rd1}
                                                         end;
                                                 false ->
-                                                        d(v3b6, Rs, Rd)
+                                                        d('valid_content_headers?', Rs, Rd)
                                         end
                         end
         end;
 %% "Okay Content-* Headers?"
-decision(v3b6, Rs, Rd) ->
-    decision_test(controller_call(valid_content_headers, Rs, Rd), true, v3b5, 501);
+decision('valid_content_headers?', Rs, Rd) ->
+    decision_test(controller_call(valid_content_headers, Rs, Rd), true, 'known_content_type?', 501);
 %% "Known Content-Type?"
-decision(v3b5, Rs, Rd) ->
-    decision_test(controller_call(known_content_type, Rs, Rd), true, v3b4, 415);
+decision('known_content_type?', Rs, Rd) ->
+    decision_test(controller_call(known_content_type, Rs, Rd), true, 'valid_entity_length?', 415);
 %% "Req Entity Too Large?"
-decision(v3b4, Rs, Rd) ->
-    decision_test(controller_call(valid_entity_length, Rs, Rd), true, v3b3, 413);
+decision('valid_entity_length?', Rs, Rd) ->
+    decision_test(controller_call(valid_entity_length, Rs, Rd), true, 'OPTIONS method?', 413);
 %% "OPTIONS?"
-decision(v3b3, Rs, Rd) ->
+decision('OPTIONS method?', Rs, Rd) ->
     case emr:method(Rd) of 
         'OPTIONS' ->
             {Hdrs, Rs1, Rd1} = controller_call(options, Rs, Rd),
