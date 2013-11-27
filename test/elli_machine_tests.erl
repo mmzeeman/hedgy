@@ -29,8 +29,15 @@ not_found_test() ->
 
 post_test() ->
 	Config = config(),
-    ?assertEqual({200, [], <<"Not Found">>},
+    ?assertEqual({200, [], <<>>},
                  elli_test:call('POST', <<"/post">>, 
+                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+    ok.
+
+get_test() ->
+    Config = config(),
+    ?assertEqual({200, [], <<"Not Found">>},
+                 elli_test:call('GET', <<"/post">>, 
                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
     
     ?assertEqual({404, [], <<"Not Found">>}, elli_test:call('GET', <<"/not_found">>, [], <<>>, Config)),

@@ -411,7 +411,7 @@ decision(v3m5, Rs, Rd) ->
     decision_test(emr:method(Rd), 'POST', v3n5, 410, Rs, Rd);
 %% "Server allows POST to missing resource?"
 decision(v3m7, Rs, Rd) ->
-    decision_test(controller_call(allow_missing_post, Rs, Rd), true, v3n11, 404);
+    decision_test(controller_call(allow_missing_post, Rs, Rd), true, 'post_is_create?', 404);
 %% "DELETE?"
 decision(v3m16, Rs, Rd) ->
     decision_test(emr:method(Rd), 'DELETE', v3m20, v3n16, Rs, Rd);
@@ -423,83 +423,75 @@ decision(v3m20b, Rs, Rd) ->
     decision_test(controller_call(delete_completed, Rs, Rd), true, v3o20, 202);
 %% "Server allows POST to missing resource?"
 decision(v3n5, Rs, Rd) ->
-    decision_test(controller_call(allow_missing_post, Rs, Rd), true, v3n11, 410);
+    decision_test(controller_call(allow_missing_post, Rs, Rd), true, 'post_is_create?', 410);
 %% "Redirect?"
-decision(v3n11, Rs, Rd) ->
-    {PostIsCreate, Rs1, Rd1} = controller_call(post_is_create, Rs, Rd),
-    {Stage1, RsStage1, RdStage1} = case PostIsCreate of
-        true ->
-            {CreatePath, Rs2, Rd2} = controller_call(create_path, Rs1, Rd1),
-            case CreatePath of
-                undefined -> 
-                    error_response("post_is_create w/o create_path", Rs2, Rd2);
-                NewPath ->
-                    case is_list(NewPath) of
-                        false -> 
-                            error_response("create_path not a string", Rs2, Rd2);
-                        true ->
-                            {BaseUri0, Rs3, Rd3} = controller_call(base_uri, Rs2, Rd2),
-                            BaseUri = case BaseUri0 of
-                                            undefined -> 
-                                                emr:base_uri(Rd2);
-                                            Any ->
-                                                case [lists:last(Any)] of
-                                                    "/" -> lists:sublist(Any, erlang:length(Any) - 1);
-                                                    _ -> Any
-                                                 end
-                                        end,
-                            FullPath = filename:join(["/", emr:path(Rd3), NewPath]),
-                            RdPath = emr:set_disp_path(FullPath, Rd3),
-                            RdLoc = case emr:get_resp_header("Location", RdPath) of
-                                undefined -> emr:set_resp_header("Location", BaseUri ++ FullPath, RdPath);
-                                _ -> RdPath
-                            end,
-
-                            {Res, Rs3, Rd3} = accept_helper(Rs2, RdLoc),
-                            case Res of
-                                {respond, Code} -> respond(Code, Rs3, Rd3);
-                                {halt, Code} -> respond(Code, Rs3, Rd3);
-                                {error, _,_} -> error_response(Res, Rs3, Rd3);
-                                {error, _} -> error_response(Res, Rs3, Rd3);
-                                _ -> {stage1_ok, Rs3, Rd3}
-                            end
-                    end
-            end;
-        _ ->
-            {ProcessPost, Rs2, Rd2} = controller_call(process_post, Rs1, Rd1),
-            case ProcessPost of
-                true -> 
-                    {_, Rs3, Rd3} = encode_body_if_set(Rs2, Rd2),
-                    {stage1_ok, Rs3, Rd3};
-                {halt, Code} -> 
-                    respond(Code, Rs2, Rd2);
-                {error, Reason} -> 
-                    error_response({error, Reason}, Rs2, Rd2);
-                {error, Reason0, Reason1} -> 
-                    error_response({error, {Reason0, Reason1}}, Rs2, Rd2);
-                Err -> 
-                    error_response({error, "process_post unexpected response", Err}, Rs2, Rd2)
-            end
-    end,
-    case Stage1 of
-        stage1_ok ->
-            case emr:resp_redirect(RdStage1) of
+decision('post_is_create?', Rs, Rd) ->
+    decision_test(controller_call(post_is_create, Rs, Rd), true, 'create_path?', do_process_post);
+% "create_path"
+decision('create_path?', Rs, Rd) ->
+    {CreatePath, Rs2, Rd2} = controller_call(create_path, Rs, Rd),
+    case CreatePath of
+        undefined -> 
+            error_response("post_is_create w/o create_path", Rs2, Rd2);
+        NewPath ->
+            case is_list(NewPath) of
+                false -> 
+                    error_response("create_path not a string", Rs2, Rd2);
                 true ->
-                    case emr:get_resp_header(<<"Location">>, RdStage1) of
-                        undefined ->
-                            respond(500, "Response had do_redirect but no Location", RsStage1, RdStage1);
+                    {BaseUri0, Rs3, Rd3} = controller_call(base_uri, Rs2, Rd2),
+                    BaseUri = case BaseUri0 of
+                                    undefined -> 
+                                        emr:base_uri(Rd2);
+                                    Any ->
+                                        case [lists:last(Any)] of
+                                            "/" -> lists:sublist(Any, erlang:length(Any) - 1);
+                                            _ -> Any
+                                         end
+                                end,
+                    FullPath = filename:join(["/", emr:path(Rd3), NewPath]),
+                    RdPath = emr:set_disp_path(FullPath, Rd3),
+                    RdLoc = case emr:get_resp_header(<<"Location">>, RdPath) of
+                        undefined -> emr:set_resp_header(<<"Location">>, BaseUri ++ FullPath, RdPath);
+                        _ -> RdPath
+                    end,
+
+                    {Res, Rs3, Rd3} = accept_helper(Rs2, RdLoc),
+                    case Res of
+                        {respond, Code} -> respond(Code, Rs3, Rd3);
+                        {halt, Code} -> respond(Code, Rs3, Rd3);
+                        {error, _,_} -> error_response(Res, Rs3, Rd3);
+                        {error, _} -> error_response(Res, Rs3, Rd3);
                         _ ->
-                            respond(303, RsStage1, RdStage1)
-                    end;
-                _ ->
-                    d(v3p11, RsStage1, RdStage1)
-            end;
-        _ -> 
-            {nop, RsStage1, RdStage1}
+                            d(v3p11, Rs3, Rd3)
+                    end
+            end
+    end;
+% process_post
+decision(do_process_post, Rs, Rd) ->
+    {ProcessPost, Rs2, Rd2} = controller_call(process_post, Rs, Rd),
+    case ProcessPost of
+        true -> 
+            {_, Rs3, Rd3} = encode_body_if_set(Rs2, Rd2),
+            d(v3p11, Rs3, Rd3);
+        {redirect, Location} ->
+            {_, Rs3, Rd3} = encode_body_if_set(Rs2, Rd2),
+            RdLocation = case emr:get_resp_header(<<"Location">>, Rd3) of 
+                undefined -> emr:set_resp_header(<<"Location">>, Location, Rd3);
+                _ -> Rd3
+            end,
+            respond(303, Rs3, RdLocation);
+        {halt, Code} -> 
+            respond(Code, Rs2, Rd2);
+        {error, Reason} -> 
+            error_response({error, Reason}, Rs2, Rd2);
+        {error, Reason0, Reason1} -> 
+            error_response({error, {Reason0, Reason1}}, Rs2, Rd2);
+        Err -> 
+            error_response({error, "process_post unexpected response", Err}, Rs2, Rd2)
     end;
 %% "POST?"
 decision(v3n16, Rs, Rd) ->
-    decision_test(emr:method(Rd), 'POST', v3n11, v3o16, Rs, Rd);
+    decision_test(emr:method(Rd), 'POST', 'post_is_create?', v3o16, Rs, Rd);
 %% Conflict?
 decision(v3o14, Rs, Rd) ->
     {IsConflict, Rs1, Rd1} = controller_call(is_conflict, Rs, Rd),

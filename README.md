@@ -98,7 +98,7 @@ its return value should be evident from examining the [[Diagram]].
 | `post_is_create` | `false` | |
 | `create_path` | `undefined` | |
 | `base_uri` | `undefined` | |
-| `process_post` | `no_default` | |
+| `process_post` | `no_default` | Returns `true` when the post is handled. It is also possible to return {redirect, path} then the post is handled and a `303 See Other` response is returned to the client. |
 | `language_available` | `true` | |
 | `charsets_provided` | `no_charset` | |
 | `encodings_provided` | `[` `{` `<<"identity">>`, `fun(X) -> X end` `}` `]` | |

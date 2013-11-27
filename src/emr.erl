@@ -30,7 +30,9 @@
     get_req_header_lc/2,
 
     set_resp_code/2,
+
     set_resp_header/3,
+    get_resp_header/2,
 
     set_resp_body/2,
     get_resp_body/1,
