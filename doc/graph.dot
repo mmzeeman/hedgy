@@ -39,8 +39,16 @@ digraph ControllerFSM {
     "known_method?" -> "method_allowed?" [label="false" penwidth=3];
     "known_method?" -> 414 [label="true"];
 
-    "method_allowed?" -> "malformed_request?" [label="true" penwidth=3]; 
+    "method_allowed?" -> "has_content_md5_header?" [label="true" penwidth=3]; 
     "method_allowed?" -> 405 [label="false"]; 
+
+    "has_content_md5_header?" -> "content_md5_valid?" [label=true];
+    "has_content_md5_header?" -> "malformed_request?" [label=false];
+
+    "content_md5_valid?" -> "malformed_request?" [label="md5 ok"];
+    "content_md5_valid?" -> 400 [label="md5 different"];
+    "content_md5_valid?" -> error;
+    "content_md5_valid?" -> halt;
 
     "malformed_request?" -> 400 [label=true];
     "malformed_request?" -> "is_authorized?" [label=false penwidth=3];

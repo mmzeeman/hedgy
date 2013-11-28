@@ -83,6 +83,7 @@ its return value should be evident from examining the [[Diagram]].
 | `forbidden` | `false` | |
 | `upgrades_provided` | `[]` | |
 | `allow_missing_post` | `false` | |
+| `validate_content_md5` | `not_validated` | Validate the content-md5 header, when `not_validated` is returend elli_machine will check the content hash. When `false` is returned, `400 Bad Request` is sent back to the client, when something else is returned processing will continue. |
 | `malformed_request` | `false` | |
 | `uri_too_long` | `false` | |
 | `known_content_type` | `true` | |

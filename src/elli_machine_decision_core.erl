@@ -155,15 +155,44 @@ decision('known_method?', Rs, Rd) ->
 %% "URI too long?"
 decision('uri_too_long?', Rs, Rd) ->
     decision_test(controller_call(uri_too_long, Rs, Rd), true, 414, 'method_allowed?');
+%% 
+
+
+
 %% "Method allowed?"
 decision('method_allowed?', Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(allowed_methods, Rs, Rd),
     case lists:member(emr:method(Rd1), Methods) of
         true ->
-            d('malformed_request?', Rs1, Rd1);
+            d('has_content_md5_header?', Rs1, Rd1);
         false ->
             RdAllow = emr:set_resp_header(<<"Allow">>, string:join([atom_to_list(M) || M <- Methods], ", "), Rd1),
             respond(405, Rs1, RdAllow)
+    end;
+%% "Content-MD5 present?"
+decision('has_content_md5_header?', Rs, Rd) ->
+    decision_test(emr:get_req_header(<<"Content-Md5">>, Rd), 
+        undefined, 'malformed_request?', 'content_md5_valid?', Rs, Rd);
+%% "Content-MD5 valid?"
+decision('content_md5_valid?', Rs, Rd) ->
+    {Answer, Rs1, Rd1} = controller_call(validate_content_md5, Rs, Rd), 
+    case Answer of
+        {error, Reason} ->
+            error_response(Reason, Rs1, Rd1);
+        {halt, Code} ->
+            respond(Code, Rs1, Rd1);
+        not_validated ->
+            Checksum = base64:decode(emr:get_req_header(<<"Content-Md5">>, Rd1)),
+            case compute_body_md5(Rd) =:= Checksum of
+                true -> 
+                    d('malformed_request?', Rs, Rd);
+                _ ->
+                    respond(400, Rs1, Rd1)
+            end;
+        false ->
+            respond(400, Rs1, Rd1);
+        _ -> 
+            d('malformed_request?', Rs1, Rd1)
     end;
 %% "Malformed?"
 decision('malformed_request?', Rs, Rd) ->
@@ -230,7 +259,7 @@ decision('OPTIONS method?', Rs, Rd) ->
     end;
 %% Accept exists?
 decision(v3c3, Rs, Rd) ->
-    case emr:get_req_header_lc(<<"Accept">>, Rd) of
+    case emr:get_req_header(<<"Accept">>, Rd) of
         undefined ->
             {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
             PTypes = [Type || {Type,_Fun} <- ContentTypes],
@@ -253,7 +282,7 @@ decision(v3c4, Rs, Rd) ->
     end;
 %% Accept-Language exists?
 decision(v3d4, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"Accept-Language">>, Rd), undefined, v3e5, v3d5, Rs, Rd);
+    decision_test(emr:get_req_header(<<"Accept-Language">>, Rd), undefined, v3e5, v3d5, Rs, Rd);
 %% Acceptable Language available? %% WMACH-46 (do this as proper conneg)
 decision(v3d5, Rs, Rd) ->
     decision_test(controller_call(language_available, Rs, Rd), true, v3e5, 406);
@@ -291,10 +320,10 @@ decision(v3g7, Rs, Rd) ->
     decision_test(controller_call(resource_exists, Rs1, RdVar), true, v3g8, v3h7);
 %% "If-Match exists?"
 decision(v3g8, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
 %% "If-Match: * exists"
 decision(v3g9, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-Match">>, Rd)),
@@ -303,10 +332,10 @@ decision(v3g11, Rs, Rd) ->
                      v3h10, 412);
 %% "If-Match: * exists"
 decision(v3h7, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
 %% "If-unmodified-since exists?"
 decision(v3h10, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
 %% "I-UM-S is valid date?"
 decision(v3h11, Rs, Rd) ->
     IUMSDate = emr:get_req_header_lc(<<"If-Unmodified-Since">>, Rd),
@@ -336,10 +365,10 @@ decision(v3i7, Rs, Rd) ->
     decision_test(emr:method(Rd), 'PUT', v3i4, v3k7, Rs, Rd);
 %% "If-none-match exists?"
 decision(v3i12, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-None-Match">>, Rd), undefined, v3l13, v3i13, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-None-Match">>, Rd), undefined, v3l13, v3i13, Rs, Rd);
 %% "If-None-Match: * exists?"
 decision(v3i13, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
 %% GET or HEAD?
 decision(v3j18, Rs, Rd) ->
     decision_test(lists:member(emr:method(Rd),['GET','HEAD']), true, 304, 412, Rs, Rd);
@@ -388,7 +417,7 @@ decision(v3l7, Rs, Rd) ->
     decision_test(emr:method(Rd), 'POST', v3m7, 404, Rs, Rd);
 %% "IMS exists?"
 decision(v3l13, Rs, Rd) ->
-    decision_test(emr:get_req_header_lc(<<"If-Modified-Since">>, Rd), undefined, v3m16, v3l14, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Modified-Since">>, Rd), undefined, v3m16, v3l14, Rs, Rd);
 %% "IMS is valid date?"
 decision(v3l14, Rs, Rd) -> 
     IMSDate = emr:get_req_header_lc(<<"If-Modified-Since">>, Rd),
@@ -734,3 +763,6 @@ contains_token(Token, HeaderString) ->
     NoWsHeaderString = elli_machine_util:remove_whitespace(HeaderString),
     Tokens = binary:split(NoWsHeaderString, <<",">>, [global]),
     lists:member(Token, Tokens).
+
+compute_body_md5(ReqData) ->
+    crypto:md5(emr:get_req_body(ReqData)).

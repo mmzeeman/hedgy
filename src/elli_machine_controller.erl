@@ -39,7 +39,7 @@
 % @doc Intitialize controller Mod.
 -spec init(module(), any()) -> {ok, {module(), any()}}.  
 init(Mod, ModArgs) ->
-    {ok, State} = Mod:init(ModArgs).
+    {ok, _State} = Mod:init(ModArgs).
 
 do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
@@ -158,6 +158,8 @@ default(generate_etag) ->
     undefined;
 default(finish_request) ->
     true;
+default(validate_content_md5) ->
+    not_validated;
 default(_) ->
     no_default.
 

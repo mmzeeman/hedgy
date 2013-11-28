@@ -27,6 +27,10 @@
     response/1,
 
     method/1,
+
+    get_req_body/1,
+
+    get_req_header/2,
     get_req_header_lc/2,
 
     set_resp_code/2,
@@ -60,12 +64,18 @@ method(#machine_reqdata{req=Req}) ->
     elli_request:method(Req).
 
 % @doc
-get_req_header_lc(Header, #machine_reqdata{req=Req}) ->
-    case elli_request:get_header(Header, Req) of
-        undefined -> 
-            undefined;
-        Val ->
-            elli_bstr:to_lower(Val)
+get_req_body(#machine_reqdata{req=Req}) ->
+    elli_request:body(Req).
+
+% @doc
+get_req_header(Header, #machine_reqdata{req=Req}) ->
+    elli_request:get_header(Header, Req).
+    
+% @doc
+get_req_header_lc(Header, ReqData) ->
+    case get_req_header(Header, ReqData) of
+        undefined -> undefined;
+        Val -> elli_bstr:to_lower(Val)
     end.
 
 % @doc Set the response code of the request
