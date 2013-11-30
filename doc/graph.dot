@@ -21,7 +21,7 @@ digraph ControllerFSM {
 
     subgraph _cluster_answer {
         node [shape=rect style=solid color=green];
-        nop halt upgrade respond
+        halt upgrade respond
     };
 
     start [shape=Mdiamond]; 
