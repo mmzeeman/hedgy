@@ -78,27 +78,26 @@ digraph ControllerFSM {
     "valid_entity_length?" -> 413 [label="false"];
 
     "OPTIONS method?" -> 200 [label="true, call options"];
-    "OPTIONS method?" -> v3c3 [label="false, [option()]"];
+    "OPTIONS method?" -> "has_accept_header?" [label="false, [option()]"];
 
-    v3c3 [label="v3c3\nhas Accept header?" shape=oval];
-    v3c3 -> v3d4 [label="false\ncall content_types_provided"];
-    v3c3 -> v3c4 [label="true, check accept header"];
+    "has_accept_header?" [shape=oval];
+    "has_accept_header?" -> "do_select_content_type" [label=false];
+    "has_accept_header?" -> "do_choose_content_type" [label=true];
 
-    v3c4 [label="v3c4\nchoose_media_type"];
-    v3c4 -> v3d4 [label="use chosen media type"];
-    v3c4 -> 406 [label="no media type chosen"];
+    "do_select_content_type" -> "has_accept_language_header?";
 
-    v3d4 [label="v3d4\nhas Accept-Language header?" shape=oval];
-    v3d4 -> v3e5 [label="false"];
-    v3d4 -> v3d5 [label="true"];
+    do_choose_content_type -> "has_accept_language_header?";
+    do_choose_content_type -> 406 [label="no media type chosen"];
+
+    "has_accept_language_header?" [shape=oval];
+    "has_accept_language_header?" -> do_choose_charset [label="false"];
+    "has_accept_language_header?" -> "language_available?" [label="true"];
  
-    v3d5 [label="v3d5\nlanguage_available"];
-    v3d5 -> v3e5 [label="true"];
-    v3d5 -> 406 [label="false"];
+    "language_available?" -> do_choose_charset [label="true"];
+    "language_available?" -> 406 [label="false"];
 
-    v3e5 [label="v3e5\naccept_charset"]
-    v3e5 -> v3f6 [label="acceptable charset"];
-    v3e5 -> 406 [label="no acceptable charset"];
+    do_choose_charset -> v3f6;
+    do_choose_charset -> 406 [label="no acceptable charset"];
     
     v3f6 [label="v3f6\ncheck acceptable encoding exists"];
     v3f6 -> v3g7 ;

@@ -254,21 +254,19 @@ decision('OPTIONS method?', Rs, Rd) ->
             {Hdrs, Rs1, Rd1} = controller_call(options, Rs, Rd),
             respond(200, Hdrs, Rs1, Rd1);
         _ ->
-            d(v3c3, Rs, Rd)
+            d('has_accept_header?', Rs, Rd)
     end;
 %% Accept exists?
-decision(v3c3, Rs, Rd) ->
-    case emr:get_req_header(<<"Accept">>, Rd) of
-        undefined ->
-            {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
-            PTypes = [Type || {Type,_Fun} <- ContentTypes],
-            {ok, RdCT} = emr:set_metadata('content-type', hd(PTypes), Rd1),
-            d(v3d4, Rs1, RdCT);
-        _ ->
-            d(v3c4, Rs, Rd)
-    end;
+decision('has_accept_header?', Rs, Rd) ->
+    decision_test(emr:get_req_header(<<"Accept">>, Rd), undefined, 
+        'do_select_content_type', 'do_choose_content_type', Rs, Rd);
+decision(do_select_content_type, Rs, Rd) ->
+    {ContentTypes, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
+    PTypes = [Type || {Type,_Fun} <- ContentTypes],
+    {ok, RdCT} = emr:set_metadata('content-type', hd(PTypes), Rd1),
+    d('has_accept_language_header?', Rs1, RdCT);
 %% Acceptable media type available?
-decision(v3c4, Rs, Rd) ->
+decision('do_choose_content_type', Rs, Rd) ->
     {ContentTypesProvided, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
     PTypes = [Type || {Type,_Fun} <- ContentTypesProvided],
     AcceptHdr = emr:get_req_header_lc(<<"Accept">>, Rd1),
@@ -277,16 +275,16 @@ decision(v3c4, Rs, Rd) ->
             respond(406, Rs1, Rd1);
         MType ->
             {ok, RdCT} = emr:set_metadata('content-type', MType, Rd1),
-            d(v3d4, Rs, RdCT)
+            d('has_accept_language_header?', Rs, RdCT)
     end;
 %% Accept-Language exists?
-decision(v3d4, Rs, Rd) ->
-    decision_test(emr:get_req_header(<<"Accept-Language">>, Rd), undefined, v3e5, v3d5, Rs, Rd);
+decision('has_accept_language_header?', Rs, Rd) ->
+    decision_test(emr:get_req_header(<<"Accept-Language">>, Rd), undefined, do_choose_charset, 'language_available?', Rs, Rd);
 %% Acceptable Language available? %% WMACH-46 (do this as proper conneg)
-decision(v3d5, Rs, Rd) ->
-    decision_test(controller_call(language_available, Rs, Rd), true, v3e5, 406);
+decision('language_available?', Rs, Rd) ->
+    decision_test(controller_call(language_available, Rs, Rd), true, 'do_choose_charset', 406);
 %% Accept-Charset exists?
-decision(v3e5, Rs, Rd) ->
+decision(do_choose_charset, Rs, Rd) ->
     AcceptCharset = case emr:get_req_header_lc(<<"Accept-Charset">>, Rd) of
         undefined -> <<"*">>;
         Ac -> Ac
