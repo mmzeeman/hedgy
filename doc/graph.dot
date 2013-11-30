@@ -59,12 +59,15 @@ digraph ControllerFSM {
     "is_authorized?" -> halt [style="dotted"];
 
     "forbidden?" -> 403 [label="true"];
-    "forbidden?" -> v3b6_upgrade [label="false" penwidth=3];
+    "forbidden?" -> "has_upgrade_header?" [label="false" penwidth=3];
 
-    v3b6_upgrade [label="v3b6\nchoose_upgrade"];
-    v3b6_upgrade -> "valid_content_headers?" [label="none"];
-    v3b6_upgrade -> upgrade [label="chosen"];
-
+    "has_upgrade_header?" [shape=oval];
+    "has_upgrade_header?" -> "do_upgrade?" [label=true];
+    "has_upgrade_header?" -> "valid_content_headers?" [label=false];
+    
+    "do_upgrade?" -> upgrade [label="chosen"];
+    "do_upgrade?" -> "valid_content_headers?" [label="none"];
+    
     "valid_content_headers?" -> "known_content_type?" [label="true" penwidth=3];
     "valid_content_headers?" -> 501 [label="false"];
 

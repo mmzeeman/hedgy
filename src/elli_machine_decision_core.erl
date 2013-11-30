@@ -213,32 +213,31 @@ decision('is_authorized?', Rs, Rd) ->
     end;
 %% "Forbidden?"
 decision('forbidden?', Rs, Rd) ->
-    decision_test(controller_call(forbidden, Rs, Rd), true, 403, v3b6_upgrade);
+    decision_test(controller_call(forbidden, Rs, Rd), true, 403, 'has_upgrade_header?');
+%% Has upgrade header.
+decision('has_upgrade_header?', Rs, Rd) ->
+    decision_test(emr:get_req_header(<<"Upgrade">>, Rd), undefined, 
+        'valid_content_headers?', 'do_upgrade?', Rs, Rd);
 %% "Upgrade?"
-decision(v3b6_upgrade, Rs, Rd) ->
-    case emr:get_req_header_lc(<<"Upgrade">>, Rd) of
-                undefined ->
-                        d('valid_content_headers?', Rs, Rd);
-                UpgradeHdr ->
-                    case emr:get_req_header_lc(<<"Connection">>, Rd) of
-                                undefined ->
-                                        d('valid_content_headers?', Rs, Rd);
-                                Connection ->
-                                        case contains_token(<<"upgrade">>, Connection) of
-                                                true ->
-                                                        {Choosen, Rs1, Rd1} = choose_upgrade(UpgradeHdr, Rs, Rd),
-                                                        case Choosen of
-                                                                none ->
-                                                                        d('valid_content_headers?', Rs1, Rd1);
-                                                                {_Protocol, UpgradeFunc} ->
-                                                                        %% TODO: log the upgrade action
-                                                                        {upgrade, UpgradeFunc, Rs1, Rd1}
-                                                        end;
-                                                false ->
-                                                        d('valid_content_headers?', Rs, Rd)
-                                        end
-                        end
-        end;
+decision('do_upgrade?', Rs, Rd) ->
+    case emr:get_req_header_lc(<<"Connection">>, Rd) of
+        undefined ->
+            d('valid_content_headers?', Rs, Rd);
+        Connection ->
+            case contains_token(<<"upgrade">>, Connection) of
+                true ->
+                    UpgradeHdr = emr:get_req_header_lc(<<"Upgrade">>, Rd),
+                    {Choosen, Rs1, Rd1} = choose_upgrade(UpgradeHdr, Rs, Rd),
+                    case Choosen of
+                        none ->
+                            d('valid_content_headers?', Rs1, Rd1);
+                        {_Protocol, UpgradeFunc} ->
+                            {upgrade, UpgradeFunc, Rs1, Rd1}
+                    end;
+                false ->
+                d('valid_content_headers?', Rs, Rd)
+            end
+    end;
 %% "Okay Content-* Headers?"
 decision('valid_content_headers?', Rs, Rd) ->
     decision_test(controller_call(valid_content_headers, Rs, Rd), true, 'known_content_type?', 501);
