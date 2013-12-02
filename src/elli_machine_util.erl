@@ -31,7 +31,9 @@
     choose_encoding/2,
 
     binary_join/2,
-    remove_whitespace/1
+    remove_whitespace/1,
+
+    rfc1123_date/1
 ]).
 
 % @doc Return the hostname of the request, or undefined if no host can be found.
@@ -83,6 +85,14 @@ binary_join([H|T], Sep, Acc) when is_integer(Sep) ->
 -spec remove_whitespace(binary()) -> binary().
 remove_whitespace(Bin) ->
     << <<C>> || <<C>> <= Bin, not (C =:= $\s orelse C=:=$\t orelse C=:= $\r orelse C =:= $\n) >>.
+
+% @doc return utc Date in rfc1123 format.
+-spec rfc1123_date(calendar:datetime()) -> binary().
+rfc1123_date({{YYYY, MM, DD}=Date, {Hour, Min, Sec}}) ->
+    DN = calendar:day_of_the_week(Date),
+    << (day(DN))/binary, ", ", (pad(DD))/binary, " ", (month(MM))/binary, " ", (year(YYYY))/binary, " ", 
+    (pad(Hour))/binary, ":", (pad(Min))/binary, ":", (pad(Sec))/binary, " GMT" >>.
+
 
 %%
 %% Helpers
@@ -304,6 +314,63 @@ unescape_quoted_string([$" | Rest], Acc) ->        % Quote indicates end of this
 unescape_quoted_string([Char | Rest], Acc) ->
     unescape_quoted_string(Rest, [Char | Acc]).
 
+day(1) -> <<"Mon">>;
+day(2) -> <<"Tue">>;
+day(3) -> <<"Wed">>;
+day(4) -> <<"Thu">>;
+day(5) -> <<"Fri">>;
+day(6) -> <<"Sat">>;
+day(7) -> <<"Sun">>.
+
+pad(0) -> <<"00">>;
+pad(1) -> <<"01">>;
+pad(2) -> <<"02">>;
+pad(3) -> <<"03">>;
+pad(4) -> <<"04">>;
+pad(5) -> <<"05">>;
+pad(6) -> <<"06">>;
+pad(7) -> <<"07">>;
+pad(8) -> <<"08">>;
+pad(9) -> <<"09">>;
+pad(10) -> <<"10">>;
+pad(11) -> <<"11">>;
+pad(12) -> <<"12">>;
+pad(13) -> <<"13">>;
+pad(14) -> <<"14">>;
+pad(15) -> <<"15">>;
+pad(16) -> <<"16">>;
+pad(17) -> <<"17">>;
+pad(18) -> <<"18">>;
+pad(19) -> <<"19">>;
+pad(20) -> <<"20">>;
+pad(21) -> <<"21">>;
+pad(22) -> <<"22">>;
+pad(23) -> <<"23">>;
+pad(24) -> <<"24">>;
+pad(25) -> <<"25">>;
+pad(26) -> <<"26">>;
+pad(27) -> <<"27">>;
+pad(28) -> <<"28">>;
+pad(29) -> <<"29">>;
+pad(30) -> <<"30">>;
+pad(31) -> <<"31">>.
+
+month(1) -> <<"Jan">>;
+month(2) -> <<"Feb">>;
+month(3) -> <<"Mar">>;
+month(4) -> <<"Apr">>;
+month(5) -> <<"May">>;
+month(6) -> <<"Jun">>;
+month(7) -> <<"Jul">>;
+month(8) -> <<"Aug">>;
+month(9) -> <<"Sep">>;
+month(10) -> <<"Oct">>;
+month(11) -> <<"Nov">>;
+month(12) -> <<"Dec">>.
+
+year(Year) ->
+    list_to_binary(integer_to_list(Year)).
+
 
 
 %%
@@ -412,6 +479,11 @@ choose_media_type_qval_test() ->
 
 choose_encoding_test() ->
     ?assertEqual(<<"identity">>, choose_encoding([<<"identity">>], <<"gzip, deflate">>)),
+    ok.
+
+
+rfc1123_date_test() ->
+    ?assertEqual(<<"Sun, 08 Nov 1970 08:00:00 GMT">>, rfc1123_date({{1970,11,8}, {8,0,0}})),
     ok.
 
 

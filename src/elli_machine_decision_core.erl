@@ -70,15 +70,16 @@ respond(Code, Controller, ReqData) ->
             {CtError, emr:set_resp_body(ErrorHTML, RdError)};
         304 ->
             RdNoCT = emr:remove_resp_header(<<"Content-Type">>, ReqData),
-            {Etag, CtEt, RdEt0} = controller_call(generate_etag, Controller, RdNoCT),
-            RdEt = case Etag of
+            {ETag, CtEt, RdEt0} = controller_call(generate_etag, Controller, RdNoCT),
+            RdEt = case ETag of
                 undefined -> RdEt0;
-                ETag -> emr:set_resp_header(<<"ETag">>, ETag, RdEt0)
+                _ -> emr:set_resp_header(<<"ETag">>, ETag, RdEt0)
             end,
             {Expires, CtExp, RdExp0} = controller_call(expires, CtEt, RdEt),
             RdExp = case Expires of
                 undefined -> RdExp0;
-                Exp -> emr:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
+                _ -> emr:set_resp_header(<<"Expires">>, 
+                    elli_machine_util:rfc1123_date(calendar:universal_time_to_local_time(Expires)), RdExp0)
             end,
             {CtExp, RdExp};
         _ -> 
@@ -310,7 +311,7 @@ decision('resource_exists?', Rs, Rd) ->
         [] -> Rd1;
         _ -> emr:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
     end,
-    decision_test(controller_call(resource_exists, Rs1, RdVar), true, 'has_if_match_header', 'has_if_match_*');
+    decision_test(controller_call(resource_exists, Rs1, RdVar), true, 'has_if_match_header', 'v3h7');
 %% "If-Match exists?"
 decision('has_if_match_header', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, 'has_if_modified_since_header', v3g9, Rs, Rd);
@@ -324,7 +325,7 @@ decision(v3g11, Rs, Rd) ->
                      fun(ETag) -> lists:member(ETag, ETags) end,
                      'has_if_modified_since_header', 412);
 %% "If-Match: * exists"
-decision('has_if_match_*', Rs, Rd) ->
+decision('v3h7', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
 %% "If-unmodified-since exists?"
 decision('has_if_modified_since_header', Rs, Rd) ->
@@ -551,13 +552,15 @@ decision(v3o18, Rs, Rd) ->
             {LastModified, RsLM, RdLM0} = controller_call(last_modified, RsEtag, RdEtag),
             RdLM = case LastModified of
                 undefined -> RdLM0;
-                LM -> emr:set_resp_header(<<"Last-Modified">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(LM)), RdLM0)
+                LM -> emr:set_resp_header(<<"Last-Modified">>, 
+                    elli_machine_util:rfc1123_date(calendar:universal_time_to_local_time(LM)), RdLM0)
             end,
 
             {Expires, RsExp, RdExp0} = controller_call(expires, RsLM, RdLM),
             RdExp = case Expires of
                 undefined -> RdExp0;
-                Exp -> emr:set_resp_header(<<"Expires">>, httpd_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
+                Exp -> emr:set_resp_header(<<"Expires">>, 
+                    elli_machine_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
             end,
 
             CT = emr:get_metadata('content-type', RdExp),
