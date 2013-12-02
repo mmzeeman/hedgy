@@ -155,10 +155,6 @@ decision('known_method?', Rs, Rd) ->
 %% "URI too long?"
 decision('uri_too_long?', Rs, Rd) ->
     decision_test(controller_call(uri_too_long, Rs, Rd), true, 414, 'method_allowed?');
-%% 
-
-
-
 %% "Method allowed?"
 decision('method_allowed?', Rs, Rd) ->
     {Methods, Rs1, Rd1} = controller_call(allowed_methods, Rs, Rd),
@@ -289,10 +285,10 @@ decision(do_choose_charset, Rs, Rd) ->
         undefined -> <<"*">>;
         Ac -> Ac
     end,
-    decision_test(choose_charset(AcceptCharset, Rs, Rd), none, 406, v3f6);    
+    decision_test(choose_charset(AcceptCharset, Rs, Rd), none, 406, 'do_set_content_type');    
 %% Accept-Encoding exists?
 % (also, set content-type header here, now that charset is chosen)
-decision(v3f6, Rs, Rd) ->
+decision('do_set_content_type', Rs, Rd) ->
     CType = emr:get_metadata('content-type', Rd),
     CSet = case emr:get_metadata('chosen-charset', Rd) of
                undefined -> <<"">>;
@@ -300,38 +296,38 @@ decision(v3f6, Rs, Rd) ->
            end,
     Rd1 = emr:set_resp_header(<<"Content-Type">>, <<CType/binary, CSet/binary>>, Rd),
     case emr:get_req_header_lc(<<"Accept-Encoding">>, Rd1) of
-        undefined -> decision_test(choose_encoding(<<"identity;q=1.0,*;q=0.5">>, Rs, Rd1), none, 406, v3g7);
-        _ -> d(v3f7, Rs, Rd1)
+        undefined -> decision_test(choose_encoding(<<"identity;q=1.0,*;q=0.5">>, Rs, Rd1), none, 406, 'resource_exists?');
+        _ -> d('do_choose_encoding', Rs, Rd1)
     end;
 %% Acceptable encoding available?
-decision(v3f7, Rs, Rd) ->
-    decision_test(choose_encoding(emr:get_req_header_lc(<<"Accept-Encoding">>, Rd), Rs, Rd), none, 406, v3g7);
+decision('do_choose_encoding', Rs, Rd) ->
+    decision_test(choose_encoding(emr:get_req_header_lc(<<"Accept-Encoding">>, Rd), Rs, Rd), none, 406, 'resource_exists?');
 %% "Resource exists?"
-decision(v3g7, Rs, Rd) ->
+decision('resource_exists?', Rs, Rd) ->
     % this is the first place after all conneg, so set Vary here
     {Variances, Rs1, Rd1} = variances(Rs, Rd),
     RdVar = case Variances of
         [] -> Rd1;
         _ -> emr:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
     end,
-    decision_test(controller_call(resource_exists, Rs1, RdVar), true, v3g8, v3h7);
+    decision_test(controller_call(resource_exists, Rs1, RdVar), true, 'has_if_match_header', 'has_if_match_*');
 %% "If-Match exists?"
-decision(v3g8, Rs, Rd) ->
-    decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, v3h10, v3g9, Rs, Rd);
+decision('has_if_match_header', Rs, Rd) ->
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, 'has_if_modified_since_header', v3g9, Rs, Rd);
 %% "If-Match: * exists"
 decision(v3g9, Rs, Rd) ->
-    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, v3h10, v3g11, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 'has_if_modified_since_header', v3g11, Rs, Rd);
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-Match">>, Rd)),
     decision_test_fn(controller_call(generate_etag, Rs, Rd),
                      fun(ETag) -> lists:member(ETag, ETags) end,
-                     v3h10, 412);
+                     'has_if_modified_since_header', 412);
 %% "If-Match: * exists"
-decision(v3h7, Rs, Rd) ->
+decision('has_if_match_*', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
 %% "If-unmodified-since exists?"
-decision(v3h10, Rs, Rd) ->
+decision('has_if_modified_since_header', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
 %% "I-UM-S is valid date?"
 decision(v3h11, Rs, Rd) ->
