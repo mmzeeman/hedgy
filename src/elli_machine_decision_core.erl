@@ -233,7 +233,7 @@ decision('do_upgrade?', Rs, Rd) ->
                             {upgrade, UpgradeFunc, Rs1, Rd1}
                     end;
                 false ->
-                d('valid_content_headers?', Rs, Rd)
+                    d('valid_content_headers?', Rs, Rd)
             end
     end;
 %% "Okay Content-* Headers?"
@@ -699,11 +699,11 @@ choose_encoding(AccEncHdr, Rs, Rd) ->
         none -> 
             {none, Rs1, Rd1};
         ChosenEnc ->
-        RdEnc = case ChosenEnc of
-            "identity" -> Rd1;
-            _ -> emr:set_resp_header(<<"Content-Encoding">>, ChosenEnc, Rd1)
-        end,
-        {ok, RdEnc1} = emr:set_metadata('content-encoding', ChosenEnc, RdEnc),
+            RdEnc = case ChosenEnc of
+                "identity" -> Rd1;
+                _ -> emr:set_resp_header(<<"Content-Encoding">>, ChosenEnc, Rd1)
+            end,
+            {ok, RdEnc1} = emr:set_metadata('content-encoding', ChosenEnc, RdEnc),
             {ChosenEnc, Rs1, RdEnc1}
     end.
 
@@ -725,20 +725,19 @@ choose_charset(AccCharHdr, Rs, Rd) ->
 
 choose_upgrade(UpgradeHdr, Rs, Rd) ->
     {UpgradesProvided, Rs1, Rd1} = controller_call(upgrades_provided, Rs, Rd),
-        Provided1 = [ {string:to_lower(Prot), Prot, PFun} || {Prot, PFun} <- UpgradesProvided],
-        Requested = [ string:to_lower(string:strip(Up)) || Up <- string:tokens(UpgradeHdr, ",") ],
-        {choose_upgrade1(Requested, Provided1), Rs1, Rd1}.
+    Provided1 = [ {elli_bstr:to_lower(Prot), Prot, PFun} || {Prot, PFun} <- UpgradesProvided],
+    Requested = [ elli_bstr:to_lower(elli_bstr:trim(Up)) || Up <- binary:split(UpgradeHdr, <<",">>, [global]) ],
+    {choose_upgrade1(Requested, Provided1), Rs1, Rd1}.
 
-        choose_upgrade1([], _) ->
-                none;
-        choose_upgrade1([Req|Requested], Provided) ->
-                case lists:keysearch(Req, 1, Provided) of
-                        false ->
-                                choose_upgrade1(Requested, Provided);
-                        {value, {_, Protocol, UpgradeFun}} ->
-                                {Protocol, UpgradeFun}
-                end.
-
+choose_upgrade1([], _) ->
+    none;
+choose_upgrade1([Req|Requested], Provided) ->
+    case lists:keysearch(Req, 1, Provided) of
+        false ->
+            choose_upgrade1(Requested, Provided);
+        {value, {_, Protocol, UpgradeFun}} ->
+            {Protocol, UpgradeFun}
+    end.
 
 variances(Rs, Rd) ->
     {ContentTypesProvided, Rs1, Rd1} = controller_call(content_types_provided, Rs, Rd),
@@ -774,3 +773,18 @@ contains_token(Token, HeaderString) ->
 
 compute_body_md5(ReqData) ->
     crypto:md5(emr:get_req_body(ReqData)).
+
+
+%%
+%% UNIT TESTS
+%%
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+choose_upgrade1_test() ->
+    ?assertEqual({<<"WebSocket">>,websocket_start}, 
+        choose_upgrade1([<<"websocket">>], [{<<"websocket">>, <<"WebSocket">>, websocket_start}])),
+    ok.
+
+-endif.

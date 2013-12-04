@@ -2,7 +2,7 @@
 %%
 %%
 
--module(post_controller).
+-module(test_post_controller).
 
 -export([init/1, 
 	ping/2, 

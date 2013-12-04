@@ -5,7 +5,8 @@ config() ->
     MachineConfig = [
         {dispatcher, {elli_machine_dispatcher, [
             {dispatch_list, [
-                {[<<"post">>, '*'], post_controller, []}
+                {[<<"post">>, '*'], test_post_controller, []},
+                {[<<"ws">>, '*'], test_ws_controller, []}
             ]}
         ]}}
     ], 
@@ -49,6 +50,20 @@ content_md5_test() ->
                      {<<"Content-Md5">>, <<"ulefm631m09zxwDJCm07qw==">>}], 
                     <<"Hoi piepeloi">>, Config)),
     ok.
+
+ws_test() ->
+    Config = config(),
+    ?assertEqual({200, [{<<"Content-Encoding">>,<<"identity">>},
+        {<<"Content-Type">>,<<"text/html">>}], <<"No websocket headers">>},
+        elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+
+    ?assertEqual({101, [], <<>>},
+        elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}, 
+            {<<"Upgrade">>, <<"websocket">>}, 
+            {<<"Connection">>, <<"upgrade">>}], <<>>, Config)),
+    
+    ok.
+
 
 get_test() ->
     Config = config(),

@@ -50,7 +50,7 @@ handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
             emr:response(ReqDataFin);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
-            {501, [], <<"Not Implemented">>}
+            {501, [], <<"Upgrade not implemented">>}
     end;
 handle(_Req, _Args) ->
     ignore.
