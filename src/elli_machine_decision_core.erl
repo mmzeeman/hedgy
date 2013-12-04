@@ -36,7 +36,7 @@ handle_request(Controller, ReqData) ->
 %% @doc Call the controller or a default.
 %% @spec controller_call(atom(), Resource, ReqData) -> {term(), NewResource, NewReqData}
 controller_call(Fun, Controller, #machine_reqdata{cache=Cache}=ReqData) ->
-    case cacheable(Fun) of
+    case memoize(Fun) of
         true ->
             case proplists:lookup(Fun, Cache) of
                 none -> 
@@ -49,12 +49,12 @@ controller_call(Fun, Controller, #machine_reqdata{cache=Cache}=ReqData) ->
             elli_machine_controller:do(Fun, Controller, ReqData)
     end.
 
-cacheable(charsets_provided) -> true;
-cacheable(content_types_provided) -> true;
-cacheable(encodings_provided) -> true;
-cacheable(last_modified) -> true;
-cacheable(generate_etag) -> true;
-cacheable(_) -> false.
+memoize(charsets_provided) -> true;
+memoize(content_types_provided) -> true;
+memoize(encodings_provided) -> true;
+memoize(last_modified) -> true;
+memoize(generate_etag) -> true;
+memoize(_) -> false.
 
 
 d(DecisionID, Controller, ReqData) ->

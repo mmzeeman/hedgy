@@ -51,7 +51,7 @@
 %% Api
 %%
 
--spec make_reqdata(Host :: undefined | binary()) -> elli_machine:req().
+-spec make_reqdata(Host :: undefined | binary()) -> elli_machine:reqdata().
 make_reqdata(Host) ->
     #machine_reqdata{host=Host}.
 
@@ -99,9 +99,10 @@ get_resp_body(ReqData) ->
     ReqData#machine_reqdata.resp_body.
 
 % @doc Returns true iff the request has a response body.
+-spec has_resp_body(elli_machine:reqdata()) -> false.
 has_resp_body(#machine_reqdata{resp_body=undefined}) ->
     false;
-has_resp_body(#machine_reqdata{}) ->
+has_resp_body(_) ->
     true.
 
 % @doc Sets metadata

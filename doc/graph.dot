@@ -2,8 +2,10 @@
 digraph ControllerFSM {
     //splines=ortho;
     
+    graph [center=start rankdir=LR ]
     node [shape=box style=rounded];
 
+    
     subgraph _cluster_500_responses {
         node [shape=rect style=solid color=red];
         error 500 501 503;
