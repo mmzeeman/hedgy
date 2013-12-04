@@ -28,6 +28,8 @@
 
     method/1,
 
+    is_get_or_head/1,
+
     get_req_body/1,
 
     get_req_header/2,
@@ -62,6 +64,14 @@ response(#machine_reqdata{resp_code=Code, resp_headers=Headers, resp_body=Body})
 % @doc 
 method(#machine_reqdata{req=Req}) ->
     elli_request:method(Req).
+
+% @doc Return true iff this is a GET or HEAD request.
+is_get_or_head(#machine_reqdata{req=Req}) ->
+    case elli_request:method(Req) of
+        'GET' -> true;
+        'HEAD' -> true;
+        _ -> false
+    end.
 
 % @doc
 get_req_body(#machine_reqdata{req=Req}) ->

@@ -35,15 +35,15 @@ handle_request(Controller, ReqData) ->
     
 %% @doc Call the controller or a default.
 %% @spec controller_call(atom(), Resource, ReqData) -> {term(), NewResource, NewReqData}
-controller_call(Fun, Controller, #machine_reqdata{cache=Cache}=ReqData) ->
+controller_call(Fun, Controller, #machine_reqdata{memo=Memo}=ReqData) ->
     case memoize(Fun) of
         true ->
-            case proplists:lookup(Fun, Cache) of
+            case proplists:lookup(Fun, Memo) of
                 none -> 
                     {T, Controller1, ReqData1} = elli_machine_controller:do(Fun, Controller, ReqData),
-                    {T, Controller1, ReqData1#machine_reqdata{cache=[{Fun,T}|Cache]}};
-                {Fun, Cached} -> 
-                    {Cached, Controller, ReqData}
+                    {T, Controller1, ReqData1#machine_reqdata{memo=[{Fun,T}|Memo]}};
+                {Fun, Result} -> 
+                    {Result, Controller, ReqData}
             end;
         false ->
             elli_machine_controller:do(Fun, Controller, ReqData)
@@ -127,7 +127,7 @@ decision_test_fn({error, R0, R1}, _TestFn, _TrueFlow, _FalseFlow, Rs, Rd) ->
     error_response({R0, R1}, Rs, Rd);
 decision_test_fn({halt, Code}, _TestFn, _TrueFlow, _FalseFlow, Rs, Rd) ->
     respond(Code, Rs, Rd);
-decision_test_fn(Test,TestFn,TrueFlow,FalseFlow, Rs, Rd) ->
+decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Rs, Rd) ->
     case TestFn(Test) of
         true -> decision_flow(TrueFlow, Test, Rs, Rd);
         false -> decision_flow(FalseFlow, Test, Rs, Rd)
@@ -204,9 +204,9 @@ decision('is_authorized?', Rs, Rd) ->
             error_response(Reason, Rs1, Rd1);
         {halt, Code}  ->
             respond(Code, Rs1, Rd1);
-    AuthHead ->
-        RdAuth = emr:set_resp_header(<<"WWW-Authenticate">>, AuthHead, Rd1),
-        respond(401, Rs1, RdAuth)
+        AuthHead ->
+            RdAuth = emr:set_resp_header(<<"WWW-Authenticate">>, AuthHead, Rd1),
+            respond(401, Rs1, RdAuth)
     end;
 %% "Forbidden?"
 decision('forbidden?', Rs, Rd) ->
@@ -219,6 +219,7 @@ decision('has_upgrade_header?', Rs, Rd) ->
 decision('do_upgrade?', Rs, Rd) ->
     case emr:get_req_header_lc(<<"Connection">>, Rd) of
         undefined ->
+            %% Isn't this a bad request, an upgrade, without a connection header.
             d('valid_content_headers?', Rs, Rd);
         Connection ->
             case contains_token(<<"upgrade">>, Connection) of
@@ -312,6 +313,9 @@ decision('resource_exists?', Rs, Rd) ->
         _ -> emr:set_resp_header(<<"Vary">>, elli_machine_util:binary_join(Variances, <<", ">>), Rd1)
     end,
     decision_test(controller_call(resource_exists, Rs1, RdVar), true, 'has_if_match_header', 'v3h7');
+
+
+
 %% "If-Match exists?"
 decision('has_if_match_header', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, 'has_if_modified_since_header', v3g9, Rs, Rd);
@@ -327,6 +331,9 @@ decision(v3g11, Rs, Rd) ->
 %% "If-Match: * exists"
 decision('v3h7', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
+
+
+
 %% "If-unmodified-since exists?"
 decision('has_if_modified_since_header', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
@@ -354,6 +361,8 @@ decision(v3i4, Rs, Rd) ->
         {halt, Code} ->
             respond(Code, Rs1, Rd1)
     end;
+
+
 %% PUT?
 decision(v3i7, Rs, Rd) ->
     decision_test(emr:method(Rd), 'PUT', v3i4, v3k7, Rs, Rd);
@@ -363,9 +372,12 @@ decision(v3i12, Rs, Rd) ->
 %% "If-None-Match: * exists?"
 decision(v3i13, Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-None-Match">>, Rd), <<"*">>, v3j18, v3k13, Rs, Rd);
+
+
 %% GET or HEAD?
 decision(v3j18, Rs, Rd) ->
-    decision_test(lists:member(emr:method(Rd),['GET','HEAD']), true, 304, 412, Rs, Rd);
+    decision_test(emr:is_get_or_head(Rd), true, 304, 412, Rs, Rd);
+
 %% "Moved permanently?"
 decision(v3k5, Rs, Rd) ->
     {MovedPermanently, Rs1, Rd1} = controller_call(moved_permanently, Rs, Rd),
@@ -429,6 +441,8 @@ decision(v3l17, Rs, Rd) ->
     {ResErlDate, Rs1, Rd1} = controller_call(last_modified, Rs, Rd),
     decision_test(ResErlDate =:= undefined orelse ResErlDate > ReqErlDate,
                   true, v3m16, 304, Rs1, Rd1);
+
+
 %% "POST?"
 decision(v3m5, Rs, Rd) ->
     decision_test(emr:method(Rd), 'POST', v3n5, 410, Rs, Rd);
@@ -463,14 +477,14 @@ decision('create_path?', Rs, Rd) ->
                 true ->
                     {BaseUri0, Rs3, Rd3} = controller_call(base_uri, Rs2, Rd2),
                     BaseUri = case BaseUri0 of
-                                    undefined -> 
-                                        emr:base_uri(Rd2);
-                                    Any ->
-                                        case [lists:last(Any)] of
-                                            "/" -> lists:sublist(Any, erlang:length(Any) - 1);
-                                            _ -> Any
-                                         end
-                                end,
+                        undefined -> 
+                            emr:base_uri(Rd2);
+                        Any ->
+                            case [lists:last(Any)] of
+                                "/" -> lists:sublist(Any, erlang:length(Any) - 1);
+                                _ -> Any
+                            end
+                    end,
                     FullPath = filename:join(["/", emr:path(Rd3), NewPath]),
                     RdPath = emr:set_disp_path(FullPath, Rd3),
                     RdLoc = case emr:get_resp_header(<<"Location">>, RdPath) of
@@ -512,15 +526,17 @@ decision(do_process_post, Rs, Rd) ->
         Err -> 
             error_response({error, "process_post unexpected response", Err}, Rs2, Rd2)
     end;
+
 %% "POST?"
 decision(v3n16, Rs, Rd) ->
     decision_test(emr:method(Rd), 'POST', 'post_is_create?', v3o16, Rs, Rd);
+
 %% Conflict?
 decision(v3o14, Rs, Rd) ->
     {IsConflict, Rs1, Rd1} = controller_call(is_conflict, Rs, Rd),
     case IsConflict of
         true -> respond(409, Rs1, Rd1);
-        _ -> 
+        false -> 
             {Res, RsHelp, RdHelp} = accept_helper(Rs1, Rd1),
             case Res of
                 {respond, Code} -> respond(Code, RsHelp, RdHelp);
@@ -530,37 +546,34 @@ decision(v3o14, Rs, Rd) ->
                 _ -> d(v3p11, RsHelp, RdHelp)
             end
     end;
+
+
 %% "PUT?"
 decision(v3o16, Rs, Rd) ->
     decision_test(emr:method(Rd), 'PUT', v3o14, v3o18, Rs, Rd);
 %% Multiple representations?
 % (also where body generation for GET and HEAD is done)
-decision(v3o18, Rs, Rd) ->    
-    BuildBody = case emr:method(Rd) of
-        'GET' -> true;
-        'HEAD' -> true;
-        _ -> false
-    end,
-    {FinalBody, RsBody, RdBody} = case BuildBody of
+decision(v3o18, Rs, Rd) ->
+    {FinalBody, RsBody, RdBody} = case emr:is_get_or_head(Rd) of
         true ->
-            {Etag, RsEtag, RdEtag0} = controller_call(generate_etag, Rs, Rd),
-            RdEtag = case Etag of
+            {ETag, RsEtag, RdEtag0} = controller_call(generate_etag, Rs, Rd),
+            RdEtag = case ETag of
                 undefined -> RdEtag0;
-                ETag -> emr:set_resp_header(<<"ETag">>, ETag, RdEtag0)
+                _ -> emr:set_resp_header(<<"ETag">>, ETag, RdEtag0)
             end,
 
             {LastModified, RsLM, RdLM0} = controller_call(last_modified, RsEtag, RdEtag),
             RdLM = case LastModified of
                 undefined -> RdLM0;
-                LM -> emr:set_resp_header(<<"Last-Modified">>, 
-                    elli_machine_util:rfc1123_date(calendar:universal_time_to_local_time(LM)), RdLM0)
+                _ -> 
+                    emr:set_resp_header(<<"Last-Modified">>, elli_machine_util:rfc1123_date(LastModified), RdLM0)
             end,
 
             {Expires, RsExp, RdExp0} = controller_call(expires, RsLM, RdLM),
             RdExp = case Expires of
                 undefined -> RdExp0;
-                Exp -> emr:set_resp_header(<<"Expires">>, 
-                    elli_machine_util:rfc1123_date(calendar:universal_time_to_local_time(Exp)), RdExp0)
+                _ -> 
+                    emr:set_resp_header(<<"Expires">>, elli_machine_util:rfc1123_date(Expires), RdExp0)
             end,
 
             CT = emr:get_metadata('content-type', RdExp),
@@ -610,9 +623,9 @@ decision(v3p11, Rs, Rd) ->
 
 accept_helper(Rs, Rd) ->
     CT = case emr:get_req_header_lc(<<"Content-Type">>, Rd) of
-             undefined -> <<"application/octet-stream">>;
-             Other -> Other
-         end,
+        undefined -> <<"application/octet-stream">>;
+        Other -> Other
+    end,
     {MT, MParams} = elli_machine_util:media_type_to_detail(CT),
     {ok, RdMParams} = emr:set_metadata('mediaparams', MParams, Rd),
     {ContentTypesAccepted, Rs1, Rd1} = controller_call(content_types_accepted, Rs, RdMParams),
@@ -626,7 +639,7 @@ accept_helper(Rs, Rd) ->
                 true ->
                     {_, RsEncoded, RdEncoded} = encode_body_if_set(Rs2, Rd2),
                     {true, RsEncoded, RdEncoded};
-                _ -> 
+                false -> 
                     {Result, Rs2, Rd2}
             end
     end.
@@ -637,7 +650,7 @@ encode_body_if_set(Rs, Rd) ->
             Body = emr:get_resp_body(Rd),
             {Encoded, Rs1, Rd1} = encode_body(Body, Rs, Rd),
             {true, Rs1, emr:set_resp_body(Encoded, Rd1)};
-        _ -> 
+        false -> 
             {false, Rs, Rd}
     end.
 
@@ -753,7 +766,6 @@ variances(Rs, Rd) ->
     end,
     {Variances, Rs4, Rd4} = controller_call(variances, Rs3, Rd3),
     {Accept ++ AcceptEncoding ++ AcceptCharset ++ Variances, Rs4, Rd4}.
-    
     
 contains_token(Token, HeaderString) ->
     NoWsHeaderString = elli_machine_util:remove_whitespace(HeaderString),

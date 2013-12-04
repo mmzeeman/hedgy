@@ -3,11 +3,11 @@
 -type some(Type) :: undefined | {some, Type}.
 
 -record(machine_reqdata, {
-	req :: undefined | elli:req(),
+    req :: undefined | elli:req(),
 
-	host :: undefined | binary(),
+    host :: undefined | binary(),
 
-    cache = [],
+    memo = [], %% Used to memoize responses to controller calls.
 
     resp_code = undefined :: undefined | non_neg_integer(),
     resp_headers = [], 
