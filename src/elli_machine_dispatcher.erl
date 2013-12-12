@@ -46,21 +46,20 @@ dispatch(Req, Args) ->
    DispatchList = proplists:get_value(dispatch_list, Args, []),
    Host = elli_machine_util:host(elli_request:headers(Req)),
    ReqData = emr:make_reqdata(Host),
-   {dispatch(Host, elli_request:path(Req), DispatchList), ReqData}.
+   {dispatch(Host, Req, DispatchList), ReqData}.
 
-%% @spec dispatch(Host::string(), Path::string(),
+%% @spec dispatch(Host::binary(), elli::req(),
 %%                DispatchList::[matchterm()]) ->
 %%         dispterm() | dispfail()
 %% @doc Interface for URL dispatching.
 %% See also http://bitbucket.org/justin/webmachine/wiki/DispatchConfiguration
-dispatch(HostAsBinary, Path, DispatchList) ->
-    %ExtraDepth = case lists:last(PathAsString) == ?SEPARATOR of
-    %    true -> 1;
-    %    _ -> 0
-    %end,
-    ExtraDepth = 1, %% Ignore the extra depth for now.
+dispatch(HostAsBinary, Req, DispatchList) ->
+    ExtraDepth = case binary:last(elli_request:raw_path(Req)) of
+        ?SEPARATOR -> 1;
+        _ -> 0
+    end,
     {Host, Port} = split_host_port(HostAsBinary),
-
+    Path = elli_request:path(Req),
     try_host_binding(DispatchList, lists:reverse(Host), Port, Path, ExtraDepth).
 
 split_host_port(undefined) ->
@@ -230,6 +229,9 @@ calculate_app_root(N) when N > 1 ->
 
 -include_lib("eunit/include/eunit.hrl").
 
+mk_req(Method, Path) ->
+    elli_http:mk_req(Method, {abs_path, Path}, [], <<>>, {1,1}, undefined, {undefined, undefined}).
+
 split_host_test() ->
     ?assertEqual([<<"example">>, <<"com">>], split_host(<<"example.com">>)),
     ?assertEqual([<<"www">>, <<"example">>, <<"com">>], split_host(<<"www.example.com">>)),
@@ -242,26 +244,26 @@ split_host_port_test() ->
 
 no_dispatch_match_test() ->
     ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>],80}, [<<"een">>,<<"twee">>]}, 
-        dispatch(<<"example.com">>, [<<"een">>, <<"twee">>], [])),
+        dispatch(<<"example.com">>, mk_req('GET', <<"/een/twee">>), [])),
     ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, [<<"een">>]}, 
-        dispatch(<<"example.com:8000">>, [<<"een">>], [])),
+        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/een">>), [])),
     ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, []}, 
-        dispatch(<<"example.com:8000">>, [], [])),
+        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/">>), [])),
     ok.
 
 dispatch_match_test() ->
     ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<".">>, <<>>},
-        dispatch(<<"example.com:8000">>, [], [{[], controller_test, []}])),
-    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<"../..">>, <<>>},
-        dispatch(<<"example.com:8000">>, [<<"een">>], [{[<<"een">>], controller_test, []}])),
+        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/">>), [{[], controller_test, []}])),
+    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<".">>, <<>>},
+        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/een">>), [{[<<"een">>], controller_test, []}])),
     ok.
 
 another_test() ->
     ?assertEqual({webmachine_demo_fs_resource, [{root,"/tmp/fs"}],
              [<<"com">>,<<"example">>], 8000,
              [<<"test.js">>],
-             [],<<"../../..">>,<<"test.js">>},
-        dispatch(<<"example.com:8000">>, [<<"fs">>, <<"test.js">>], [{[<<"fs">>, '*'], 
+             [],<<"../..">>,<<"test.js">>},
+        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/fs/test.js">>), [{[<<"fs">>, '*'], 
             webmachine_demo_fs_resource, [{root, "/tmp/fs"}]} ])),
     ok.
 

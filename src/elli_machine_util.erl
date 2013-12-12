@@ -371,8 +371,6 @@ month(12) -> <<"Dec">>.
 year(Year) ->
     list_to_binary(integer_to_list(Year)).
 
-
-
 %%
 %% Tests
 %%
