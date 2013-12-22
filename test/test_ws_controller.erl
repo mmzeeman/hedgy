@@ -27,8 +27,9 @@ ping(ReqData, Context) ->
 upgrades_provided(ReqData, Context) ->
     {[{<<"WebSocket">>, websocket_start}], ReqData, Context}.
 
+%% Will be called by decision logic after the upgrade headers are accepted.
 websocket_start(ReqData, Context) ->
-    undefined.
+    websocket_start.
 
 to_html(ReqData, Context) ->
     {<<"No websocket headers">>, ReqData, Context}.
