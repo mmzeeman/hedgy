@@ -104,48 +104,34 @@ error_response(Code, Reason, Controller, ReqData) ->
 decision_test({Test, Controller, ReqData}, TestVal, TrueFlow, FalseFlow) ->
     decision_test(Test, TestVal, TrueFlow, FalseFlow, Controller, ReqData).
 
-decision_test(Test,TestVal,TrueFlow,FalseFlow, Controller, ReqData) ->
-    case Test of
-        {halt, Code} ->
-            respond(Code, Controller, ReqData);
-        {error, Reason} ->
-            error_response(Reason, Controller, ReqData);
-        {error, Reason0, Reason1} -> 
-            error_response({Reason0, Reason1}, Controller, ReqData);
-        TestVal -> 
+%%
+decision_test({halt, Code}, _, _, _, Controller, ReqData) ->
+    respond(Code, Controller, ReqData);
+decision_test({error, Reason}, _, _, _, Controller, ReqData) ->
+    error_response(Reason, Controller, ReqData);
+decision_test({error, Reason0, Reason1}, _, _, _, Controller, ReqData) ->
+    error_response({Reason0, Reason1}, Controller, ReqData);
+decision_test(Test, TestFn, TrueFlow, FalseFlow, Controller, ReqData) when is_function(TestFn) ->
+    case TestFn(Test) of
+        true ->
             decision_flow(TrueFlow, Test, Controller, ReqData);
-        _ -> 
+        false -> 
             decision_flow(FalseFlow, Test, Controller, ReqData)
-    end.
-
-decision_test_fn({Test, Rs, Rd}, TestFn, TrueFlow, FalseFlow) ->
-    decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Rs, Rd).
-
-decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Controller, ReqData) ->
-    case Test of
-        {halt, Code} ->
-            respond(Code, Controller, ReqData);
-        {error, Reason} ->
-            error_response(Reason, Controller, ReqData);
-        {error, Reason0, Reason1} -> 
-            error_response({Reason0, Reason1}, Controller, ReqData);
-        _ ->
-            case TestFn(Test) of
-                true ->
-                    decision_flow(TrueFlow, Test, Controller, ReqData);
-                false -> 
-                    decision_flow(FalseFlow, Test, Controller, ReqData)
-            end
-    end.
-    
-decision_flow(X, TestResult, Rs, Rd) when is_integer(X) ->
-    if X >= 500 -> error_response(X, TestResult, Rs, Rd);
-       true -> respond(X, Rs, Rd)
     end;
-decision_flow(X, _TestResult, Rs, Rd) when is_atom(X) -> 
-    d(X, Rs, Rd);
-decision_flow({ErrCode, Reason}, _TestResult, Rs, Rd) when is_integer(ErrCode) ->
-    error_response(ErrCode, Reason, Rs, Rd).
+decision_test(Test, Test, TrueFlow, _FalseFlow, Controller, ReqData) ->
+    decision_flow(TrueFlow, Test, Controller, ReqData);
+decision_test(Test, _TestVal, _TrueFlow, FalseFlow, Controller, ReqData) ->
+    decision_flow(FalseFlow, Test, Controller, ReqData).
+
+%%
+decision_flow(X, _TestResult, Controller, ReqData) when is_atom(X) -> 
+    d(X, Controller, ReqData);
+decision_flow(X, TestResult, Controller, ReqData) when is_integer(X) andalso X >= 500 ->
+    error_response(X, TestResult, Controller, ReqData);
+decision_flow({ErrCode, Reason}, _TestResult, Controller, ReqData) when is_integer(ErrCode) ->
+    error_response(ErrCode, Reason, Controller, ReqData);
+decision_flow(X, _TestResult, Controller, ReqData) when is_integer(X) ->
+    respond(X, Controller, ReqData).
 
 
 
@@ -333,7 +319,7 @@ decision(v3g9, Rs, Rd) ->
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-Match">>, Rd)),
-    decision_test_fn(controller_call(generate_etag, Rs, Rd),
+    decision_test(controller_call(generate_etag, Rs, Rd),
                      fun(ETag) -> lists:member(ETag, ETags) end,
                      'has_if_modified_since_header', 412);
 %% "If-Match: * exists"
@@ -406,7 +392,7 @@ decision(v3k7, Rs, Rd) ->
 %% "Etag in if-none-match?"
 decision(v3k13, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-None-Match">>, Rd)),
-    decision_test_fn(controller_call(generate_etag, Rs, Rd),
+    decision_test(controller_call(generate_etag, Rs, Rd),
                      %% Membership test is a little counter-intuitive here; if the
                      %% provided ETag is a member, we follow the error case out
                      %% via v3j18.
