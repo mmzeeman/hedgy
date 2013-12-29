@@ -106,12 +106,12 @@ decision_test({Test, Controller, ReqData}, TestVal, TrueFlow, FalseFlow) ->
 
 decision_test(Test,TestVal,TrueFlow,FalseFlow, Controller, ReqData) ->
     case Test of
+        {halt, Code} ->
+            respond(Code, Controller, ReqData);
         {error, Reason} ->
             error_response(Reason, Controller, ReqData);
         {error, Reason0, Reason1} -> 
             error_response({Reason0, Reason1}, Controller, ReqData);
-        {halt, Code} -> 
-            respond(Code, Controller, ReqData);
         TestVal -> 
             decision_flow(TrueFlow, Test, Controller, ReqData);
         _ -> 
@@ -121,16 +121,21 @@ decision_test(Test,TestVal,TrueFlow,FalseFlow, Controller, ReqData) ->
 decision_test_fn({Test, Rs, Rd}, TestFn, TrueFlow, FalseFlow) ->
     decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Rs, Rd).
 
-decision_test_fn({error, Reason}, _TestFn, _TrueFlow, _FalseFlow, Rs, Rd) ->
-    error_response(Reason, Rs, Rd);
-decision_test_fn({error, R0, R1}, _TestFn, _TrueFlow, _FalseFlow, Rs, Rd) ->
-    error_response({R0, R1}, Rs, Rd);
-decision_test_fn({halt, Code}, _TestFn, _TrueFlow, _FalseFlow, Rs, Rd) ->
-    respond(Code, Rs, Rd);
-decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Rs, Rd) ->
-    case TestFn(Test) of
-        true -> decision_flow(TrueFlow, Test, Rs, Rd);
-        false -> decision_flow(FalseFlow, Test, Rs, Rd)
+decision_test_fn(Test, TestFn, TrueFlow, FalseFlow, Controller, ReqData) ->
+    case Test of
+        {halt, Code} ->
+            respond(Code, Controller, ReqData);
+        {error, Reason} ->
+            error_response(Reason, Controller, ReqData);
+        {error, Reason0, Reason1} -> 
+            error_response({Reason0, Reason1}, Controller, ReqData);
+        _ ->
+            case TestFn(Test) of
+                true ->
+                    decision_flow(TrueFlow, Test, Controller, ReqData);
+                false -> 
+                    decision_flow(FalseFlow, Test, Controller, ReqData)
+            end
     end.
     
 decision_flow(X, TestResult, Rs, Rd) when is_integer(X) ->
@@ -254,6 +259,9 @@ decision('OPTIONS method?', Rs, Rd) ->
         _ ->
             d('has_accept_header?', Rs, Rd)
     end;
+
+
+    
 %% Accept exists?
 decision('has_accept_header?', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"Accept">>, Rd), undefined, 
