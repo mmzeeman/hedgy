@@ -32,14 +32,14 @@ digraph ControllerFSM {
     do_ping -> "service_available?" [label = "pong"];
     do_ping -> 503 [label="!pong"];
     
-    "service_available?" -> "known_methods?" [label="true" penwidth=3];
+    "service_available?" -> "known_method?" [label="true" penwidth=3];
     "service_available?" -> 503 [label="false"];
 
-    "known_methods?" -> "known_method?" [label="known method" penwidth=3];
-    "known_methods?" -> 501 [label="unknown method"];
+    "known_method?" -> "uri_too_long?" [label="true" penwidth=3];
+    "known_method?" -> 501 [label="false"];
 
-    "known_method?" -> "method_allowed?" [label="false" penwidth=3];
-    "known_method?" -> 414 [label="true"];
+    "uri_too_long?" -> "method_allowed?" [label="false" penwidth=3];
+    "uri_too_long?" -> 414 [label="true"];
 
     "method_allowed?" -> "has_content_md5_header?" [label="true" penwidth=3]; 
     "method_allowed?" -> 405 [label="false"]; 
