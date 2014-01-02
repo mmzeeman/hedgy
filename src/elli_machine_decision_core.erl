@@ -312,16 +312,16 @@ decision('resource_exists?', Rs, Rd) ->
 
 %% "If-Match exists?"
 decision('has_if_match_header', Rs, Rd) ->
-    decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, 'has_if_modified_since_header', v3g9, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), undefined, 'has_if_unmodified_since_header', v3g9, Rs, Rd);
 %% "If-Match: * exists"
 decision(v3g9, Rs, Rd) ->
-    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 'has_if_modified_since_header', v3g11, Rs, Rd);
+    decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 'has_if_unmodified_since_header', v3g11, Rs, Rd);
 %% "ETag in If-Match"
 decision(v3g11, Rs, Rd) ->
     ETags = elli_machine_util:split_quoted_strings(emr:get_req_header_lc(<<"If-Match">>, Rd)),
     decision_test(controller_call(generate_etag, Rs, Rd),
                      fun(ETag) -> lists:member(ETag, ETags) end,
-                     'has_if_modified_since_header', 412);
+                     'has_if_unmodified_since_header', 412);
 %% "If-Match: * exists"
 decision('v3h7', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Match">>, Rd), <<"*">>, 412, v3i7, Rs, Rd);
@@ -329,7 +329,7 @@ decision('v3h7', Rs, Rd) ->
 
 
 %% "If-unmodified-since exists?"
-decision('has_if_modified_since_header', Rs, Rd) ->
+decision('has_if_unmodified_since_header', Rs, Rd) ->
     decision_test(emr:get_req_header(<<"If-Unmodified-Since">>, Rd), undefined, v3i12, v3h11, Rs, Rd);
 %% "I-UM-S is valid date?"
 decision(v3h11, Rs, Rd) ->
