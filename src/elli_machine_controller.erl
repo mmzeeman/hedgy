@@ -34,6 +34,7 @@
 ]).
 
 -include("elli_machine.hrl").
+-include("elli_machine_internal.hrl").
 
         
 % @doc Intitialize controller Mod.
@@ -43,12 +44,12 @@ init(Mod, ModArgs) ->
 
 %%
 %%
-call(Fun, FlowState) when is_atom(Fun) ->
+call(Fun, #machine_flow_state{controller_mod=Mod}=FlowState) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
         true ->
             controller_call(Fun, FlowState);
         false ->
-            {use_default(Fun, Mod), Flow}
+            {use_default(Fun, Mod), FlowState}
     end.
 
 
@@ -72,8 +73,8 @@ render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
 %%
 
 controller_call(F, #machine_flow_state{exchange=Exc, controller_mod=Mod, controller_state=State}=Flow) ->
-    {Res, Exchange1, State1} = Mod:F(Exc, State),
-    {Res, Flow#machine_flow_state{exchange=Exchange, controller_state=State1}}.
+    {Res, Exc1, State1} = Mod:F(Exc, State),
+    {Res, Flow#machine_flow_state{exchange=Exc1, controller_state=State1}}.
 
 
 use_default(Fun, Mod) ->

@@ -30,6 +30,7 @@
 
 -export_type([exchange/0]).
 -type exchange() :: record(machine_exchange).
+-type flow_state() :: record(machine_flow_state).
 
 -behaviour(elli_handler).
 
@@ -40,7 +41,7 @@
 % @doc Preprocess the request, call the dispatcher and return a controller 
 % reqdata.
 %
--spec preprocess(elli:req(), any()) -> {{module(), any()}, reqdata()}.
+-spec preprocess(elli:req(), any()) -> flow_state().
 preprocess(Req, Args) ->
     {Mod, ModArgs} = dispatcher(Args),
     dispatch(Req, Mod, ModArgs).
@@ -49,15 +50,12 @@ preprocess(Req, Args) ->
 % of the controller.
 handle(FlowState, _Args) ->
     case elli_machine_flow:handle_request(FlowState) of
-        {_, _FlowFin} ->                 
-            emx:response(FlowFin#machine_flow.exchange);
+        {_, FlowFin} -> 
+            emx:response(FlowFin#machine_flow_state.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
             {501, [], <<"Upgrade not implemented">>}
-    end;
-handle(_Req, _Args) ->
-    ignore.
-            
+    end.    
 
 % @doc Handle event
 %
@@ -74,9 +72,9 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
             {undefined, ReqData};
         {{ControllerMod, ControllerOpts, 
           _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, ReqData} ->
-            {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts).
-            #machine_flow{exchange=emx:make_exchange(Req), 
-                          controller_mod=ControllerMod, controller_state=ControllerState}.
+            {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts),
+            #machine_flow_state{exchange=emx:make_exchange(Req), 
+                          controller_mod=ControllerMod, controller_state=ControllerState}
     end.
 
 dispatcher(Args) ->
