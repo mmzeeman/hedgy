@@ -48,6 +48,8 @@ preprocess(Req, Args) ->
 
 % @doc Handle the request. Call the decision core which calls the callbacks
 % of the controller.
+handle({no_dispatch_match, _ReqData}, _Args) ->
+    ignore; 
 handle(FlowState, _Args) ->
     case elli_machine_flow:handle_request(FlowState) of
         {_, FlowFin} -> 
@@ -69,7 +71,7 @@ handle_event(_Name, _EventArgs, _) ->
 dispatch(Req, Dispatcher, DispatchArgs) ->
     case Dispatcher:dispatch(Req, DispatchArgs) of
         {{no_dispatch_match, _Host, _PathSpec}, ReqData} ->
-            {undefined, ReqData};
+            {no_dispatch_match, ReqData};
         {{ControllerMod, ControllerOpts, 
           _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, ReqData} ->
             {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts),

@@ -94,7 +94,11 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = call(provide_content, S7),
+                            S8 = S7, 
+                            
+                            % call(provide_content, S7),
+                            
+                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                             % item 187
                             finalize(S8)
                         end
@@ -102,7 +106,11 @@ get_flow(State) ->
                 ; true ->
                     % item 46
                     S7 = set_last_modified(LastModified, S6),
-                    S8 = call(provide_content, S7),
+                    S8 = S7, 
+                    
+                    % call(provide_content, S7),
+                    
+                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                     % item 187
                     finalize(S8)
                 end
@@ -138,7 +146,11 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = call(provide_content, S7),
+                                S8 = S7, 
+                                
+                                % call(provide_content, S7),
+                                
+                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -146,7 +158,11 @@ get_flow(State) ->
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
-                        S8 = call(provide_content, S7),
+                        S8 = S7, 
+                        
+                        % call(provide_content, S7),
+                        
+                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                         % item 187
                         finalize(S8)
                     end
@@ -183,7 +199,11 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = call(provide_content, S7),
+                                    S8 = S7, 
+                                    
+                                    % call(provide_content, S7),
+                                    
+                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -191,7 +211,11 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = call(provide_content, S7),
+                            S8 = S7, 
+                            
+                            % call(provide_content, S7),
+                            
+                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                             % item 187
                             finalize(S8)
                         end
@@ -231,7 +255,11 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = call(provide_content, S7),
+                                S8 = S7, 
+                                
+                                % call(provide_content, S7),
+                                
+                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -239,7 +267,11 @@ get_flow(State) ->
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
-                        S8 = call(provide_content, S7),
+                        S8 = S7, 
+                        
+                        % call(provide_content, S7),
+                        
+                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                         % item 187
                         finalize(S8)
                     end
@@ -275,7 +307,11 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = call(provide_content, S7),
+                                    S8 = S7, 
+                                    
+                                    % call(provide_content, S7),
+                                    
+                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -283,7 +319,11 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = call(provide_content, S7),
+                            S8 = S7, 
+                            
+                            % call(provide_content, S7),
+                            
+                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                             % item 187
                             finalize(S8)
                         end
@@ -320,7 +360,11 @@ get_flow(State) ->
                                     ; true ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
-                                        S8 = call(provide_content, S7),
+                                        S8 = S7, 
+                                        
+                                        % call(provide_content, S7),
+                                        
+                                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                         % item 187
                                         finalize(S8)
                                     end
@@ -328,7 +372,11 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = call(provide_content, S7),
+                                S8 = S7, 
+                                
+                                % call(provide_content, S7),
+                                
+                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -371,7 +419,11 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = call(provide_content, S7),
+                                    S8 = S7, 
+                                    
+                                    % call(provide_content, S7),
+                                    
+                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -379,7 +431,11 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = call(provide_content, S7),
+                            S8 = S7, 
+                            
+                            % call(provide_content, S7),
+                            
+                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                             % item 187
                             finalize(S8)
                         end
@@ -415,7 +471,11 @@ get_flow(State) ->
                                     ; true ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
-                                        S8 = call(provide_content, S7),
+                                        S8 = S7, 
+                                        
+                                        % call(provide_content, S7),
+                                        
+                                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                         % item 187
                                         finalize(S8)
                                     end
@@ -423,7 +483,11 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = call(provide_content, S7),
+                                S8 = S7, 
+                                
+                                % call(provide_content, S7),
+                                
+                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -460,7 +524,11 @@ get_flow(State) ->
                                         ; true ->
                                             % item 46
                                             S7 = set_last_modified(LastModified, S6),
-                                            S8 = call(provide_content, S7),
+                                            S8 = S7, 
+                                            
+                                            % call(provide_content, S7),
+                                            
+                                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                             % item 187
                                             finalize(S8)
                                         end
@@ -468,7 +536,11 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = call(provide_content, S7),
+                                    S8 = S7, 
+                                    
+                                    % call(provide_content, S7),
+                                    
+                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
                                     % item 187
                                     finalize(S8)
                                 end
