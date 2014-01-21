@@ -27,7 +27,7 @@
 
 -export([
     init/2,
-    do/3,
+    call/2,
 
     handle_event/3,
     render_error/4
@@ -41,14 +41,19 @@
 init(Mod, ModArgs) ->
     {ok, _State} = Mod:init(ModArgs).
 
-do(Fun, {Mod, _}=Controller, ReqData) when is_atom(Fun) ->
+%%
+%%
+call(Fun, FlowState) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
         true ->
-            controller_call(Fun, Controller, ReqData);
+            controller_call(Fun, FlowState);
         false ->
-            use_default(Fun, Controller, ReqData)
+            {use_default(Fun, Mod), Flow}
     end.
 
+
+%%
+%%
 handle_event({Mod, State}, Name, EventArgs) ->
     Mod:handle_event(Name, EventArgs, State).
 
@@ -66,17 +71,17 @@ render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
 %% Helpers
 %%
 
-controller_call(F, {Mod, State}, ReqData) ->
-    {Res, ReqData1, State1} = Mod:F(ReqData, State),
-    {Res, {Mod, State1}, ReqData1}.
+controller_call(F, #machine_flow_state{exchange=Exc, controller_mod=Mod, controller_state=State}=Flow) ->
+    {Res, Exchange1, State1} = Mod:F(Exc, State),
+    {Res, Flow#machine_flow_state{exchange=Exchange, controller_state=State1}}.
 
 
-use_default(Fun, Controller, ReqData) ->
+use_default(Fun, Mod) ->
     case default(Fun) of
         no_default ->
-            {{error, {no_default, Fun, Controller}}, Controller, ReqData};
+            {error, {no_default, Fun, Mod}};
         Default ->
-            {Default, Controller, ReqData}
+            Default
     end.
 
 default(ping) ->

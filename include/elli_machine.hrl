@@ -1,19 +1,19 @@
 
 
--type some(Type) :: undefined | {some, Type}.
-
--record(machine_reqdata, {
+-record(machine_exchange, {
     req :: undefined | elli:req(),
+    req_type = standard :: standard | handover,
 
-    host :: undefined | binary(),
-
-    memo = [], %% Used to memoize responses to controller calls.
-
+    %% Response
+    %%
     resp_code = undefined :: undefined | non_neg_integer(),
-    resp_headers = [], 
+    resp_headers = [],
     resp_body = <<>> :: binary() | iolist(),
 
-    %% Request Metadata
+    %% Request Metadata needed during handling the request.
+    %%
+    host :: undefined | binary(),
+
     'content-type' :: undefined | binary(),    
     'content-encoding' :: undefined | binary(),
     'chosen-charset' :: undefined | binary(),

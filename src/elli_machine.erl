@@ -21,12 +21,15 @@
 -author("Maas-Maarten Zeeman <mmzeeman@xs4all.nl>").
 
 -include_lib("elli/include/elli.hrl").
+
 -include("elli_machine.hrl").
+-include("elli_machine_internal.hrl").
+
 
 -export([preprocess/2, handle/2, handle_event/3]).
 
--export_type([reqdata/0]).
--type reqdata() :: record(machine_reqdata).
+-export_type([exchange/0]).
+-type exchange() :: record(machine_exchange).
 
 -behaviour(elli_handler).
 
@@ -44,10 +47,10 @@ preprocess(Req, Args) ->
 
 % @doc Handle the request. Call the decision core which calls the callbacks
 % of the controller.
-handle({Controller, ReqData}, _Args) when Controller =/= undefined ->
-    case elli_machine_decision_core:handle_request(Controller, ReqData) of
-        {_, _ControllerFin, ReqDataFin} ->                 
-            emr:response(ReqDataFin);
+handle(FlowState, _Args) ->
+    case elli_machine_flow:handle_request(FlowState) of
+        {_, _FlowFin} ->                 
+            emx:response(FlowFin#machine_flow.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
             {501, [], <<"Upgrade not implemented">>}
@@ -58,7 +61,8 @@ handle(_Req, _Args) ->
 
 % @doc Handle event
 %
-handle_event(_Name, _EventArgs, _) -> ok.
+handle_event(_Name, _EventArgs, _) -> 
+    ok.
 
 %%
 %% Helpers
@@ -70,15 +74,10 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
             {undefined, ReqData};
         {{ControllerMod, ControllerOpts, 
           _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, ReqData} ->
-            %% TODO -- Clean up this mess. fill the rest of the request data.
-            ReqData1 = ReqData#machine_reqdata{req=Req},
-            Controller = init_controller(ControllerMod, ControllerOpts),
-            {Controller, ReqData1}
+            {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts).
+            #machine_flow{exchange=emx:make_exchange(Req), 
+                          controller_mod=ControllerMod, controller_state=ControllerState}.
     end.
-
-init_controller(ControllerMod, ControllerOpts) ->
-    {ok, ControllerState} = elli_machine_controller:init(ControllerMod, ControllerOpts),
-    {ControllerMod, ControllerState}.
 
 dispatcher(Args) ->
     proplists:get_value(dispatcher, Args).

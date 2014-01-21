@@ -9,18 +9,18 @@
 init(_Args) -> 
 	{ok, undefined}.
 
-ping(ReqData, Context) ->
-	{pong, ReqData, Context}.
+ping(Exchange, Context) ->
+	{pong, Exchange, Context}.
 
-to_html(ReqData, Context) -> 
-	{<<"Hello, new world">>, ReqData, Context}.
+to_html(Exchange, Context) -> 
+	{<<"Hello, new world">>, Exchange, Context}.
 
 %%
 %% 
 %%
 
-render_error(Code, _Error, ReqData, Context) ->
-	{<<"Error">>, ReqData, Context}.
+render_error(Code, _Error, Exchange, Context) ->
+	{<<"Error">>, Exchange, Context}.
 
 handle_event(_Name, _Args, _Context) ->
 	%% io:fwrite(standard_error, "~p: ~p~n", [Name, Args]),
