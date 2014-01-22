@@ -725,181 +725,212 @@ options_flow(State) ->
 post_flow(State) ->
     % item 294
     Req = request(State),
-    {ResourceExists, S1} = 
-        call(resource_exists, State),
-    % item 72
-    if ResourceExists -> 
-        % item 306
-        {LastModified, S2} = call(last_modified, S1),
-        % item 307
-        if LastModified =:= undefined -> 
-            % item 295
-            IfModifiedSince =
-                elli_request:get_header(<<"If-Modified-Since">>, Req),
-            % item 75
-            if IfModifiedSince =:= undefined -> 
-                % item 312
-                {ContentTypesAccepted, S3} = 
-                    call(content_types_accepted, S2),
-                % item 81
-                if ContentTypesAccepted =:= [] -> 
-                    % item 112
-                    % Unsupported MediaType
-                    respond(415, S3)
-                ; true ->
-                    % item 315
-                    {ProcessResult, S4} = 
-                        process_post(S3),
-                    % item 325
-                    if ProcessResult =:= true -> 
-                        % item 324
-                        S5 = encode_body_if_set(S4),
-                        % item 179
-                        finalize(S5)
-                    ; true ->
-                        % item 323
-                        {redirect, Url} = ProcessResult,
-                        S5 = set_header_if_not_set(<<"Location">>, Url, S4),
-                        % item 100
-                        % See Other
-                        respond(303, S5)
-                    end
-                end
-            ; true ->
-                % item 181
-                if LastModified > IfModifiedSince -> 
-                    % item 312
-                    {ContentTypesAccepted, S3} = 
-                        call(content_types_accepted, S2),
-                    % item 81
-                    if ContentTypesAccepted =:= [] -> 
-                        % item 112
-                        % Unsupported MediaType
-                        respond(415, S3)
-                    ; true ->
-                        % item 315
-                        {ProcessResult, S4} = 
-                            process_post(S3),
-                        % item 325
-                        if ProcessResult =:= true -> 
-                            % item 324
-                            S5 = encode_body_if_set(S4),
-                            % item 179
-                            finalize(S5)
+    % item 389
+    {ValidContentHeaders, S1} = 
+        call(valid_content_headers, State),
+    % item 392
+    if ValidContentHeaders -> 
+        % item 390
+        {KnownContentType, S2} =
+            call(known_content_type, S1),
+        % item 394
+        if KnownContentType -> 
+            % item 391
+            {ValidEntityLength, S3} =
+                call(valid_entity_length, S2),
+            % item 396
+            if ValidEntityLength -> 
+                % item 388
+                {ResourceExists, S4} = 
+                    call(resource_exists, S3),
+                % item 72
+                if ResourceExists -> 
+                    % item 306
+                    {LastModified, S5} = call(last_modified, S4),
+                    % item 307
+                    if LastModified =:= undefined -> 
+                        % item 295
+                        IfModifiedSince =
+                            elli_request:get_header(<<"If-Modified-Since">>, Req),
+                        % item 75
+                        if IfModifiedSince =:= undefined -> 
+                            % item 312
+                            {ContentTypesAccepted, S6} = 
+                                call(content_types_accepted, S5),
+                            % item 81
+                            if ContentTypesAccepted =:= [] -> 
+                                % item 112
+                                % Unsupported MediaType
+                                respond(415, S6)
+                            ; true ->
+                                % item 315
+                                {ProcessResult, S7} = 
+                                    process_post(S6),
+                                % item 325
+                                if ProcessResult =:= true -> 
+                                    % item 324
+                                    S8 = encode_body_if_set(S7),
+                                    % item 179
+                                    finalize(S8)
+                                ; true ->
+                                    % item 323
+                                    {redirect, Url} = ProcessResult,
+                                    S8 = set_header_if_not_set(<<"Location">>, Url, S7),
+                                    % item 100
+                                    % See Other
+                                    respond(303, S8)
+                                end
+                            end
                         ; true ->
-                            % item 323
-                            {redirect, Url} = ProcessResult,
-                            S5 = set_header_if_not_set(<<"Location">>, Url, S4),
-                            % item 100
-                            % See Other
-                            respond(303, S5)
+                            % item 181
+                            if LastModified > IfModifiedSince -> 
+                                % item 312
+                                {ContentTypesAccepted, S6} = 
+                                    call(content_types_accepted, S5),
+                                % item 81
+                                if ContentTypesAccepted =:= [] -> 
+                                    % item 112
+                                    % Unsupported MediaType
+                                    respond(415, S6)
+                                ; true ->
+                                    % item 315
+                                    {ProcessResult, S7} = 
+                                        process_post(S6),
+                                    % item 325
+                                    if ProcessResult =:= true -> 
+                                        % item 324
+                                        S8 = encode_body_if_set(S7),
+                                        % item 179
+                                        finalize(S8)
+                                    ; true ->
+                                        % item 323
+                                        {redirect, Url} = ProcessResult,
+                                        S8 = set_header_if_not_set(<<"Location">>, Url, S7),
+                                        % item 100
+                                        % See Other
+                                        respond(303, S8)
+                                    end
+                                end
+                            ; true ->
+                                % item 184
+                                % generate_etag/2,
+                                % item 185
+                                % expires/2,
+                                % item 186
+                                % Not Modified
+                                respond(304, S5)
+                            end
+                        end
+                    ; true ->
+                        % item 312
+                        {ContentTypesAccepted, S6} = 
+                            call(content_types_accepted, S5),
+                        % item 81
+                        if ContentTypesAccepted =:= [] -> 
+                            % item 112
+                            % Unsupported MediaType
+                            respond(415, S6)
+                        ; true ->
+                            % item 315
+                            {ProcessResult, S7} = 
+                                process_post(S6),
+                            % item 325
+                            if ProcessResult =:= true -> 
+                                % item 324
+                                S8 = encode_body_if_set(S7),
+                                % item 179
+                                finalize(S8)
+                            ; true ->
+                                % item 323
+                                {redirect, Url} = ProcessResult,
+                                S8 = set_header_if_not_set(<<"Location">>, Url, S7),
+                                % item 100
+                                % See Other
+                                respond(303, S8)
+                            end
                         end
                     end
                 ; true ->
-                    % item 184
-                    % generate_etag/2,
-                    % item 185
-                    % expires/2,
-                    % item 186
-                    % Not Modified
-                    respond(304, State)
+                    % item 309
+                    {PreviouslyExisted, S5} =
+                        call(previously_existed, S4),
+                    % item 104
+                    if PreviouslyExisted -> 
+                        % item 310
+                        {MovedPermanently, S6} = 
+                            call(moved_permanently, S5),
+                        % item 113
+                        if MovedPermanently -> 
+                            % item 120
+                            % Moved Permanently
+                            respond(301, S6)
+                        ; true ->
+                            % item 311
+                            {MovedTemporarily, S7} = 
+                                call(moved_temporarily, S6),
+                            % item 121
+                            if MovedTemporarily -> 
+                                % item 124
+                                % Moved Temporarily
+                                respond(410, S7)
+                            ; true ->
+                                % item 125
+                                % Gone
+                                respond(410, S7)
+                            end
+                        end
+                    ; true ->
+                        % item 313
+                        {AllowMissingPost, S6} = 
+                            call(allow_missing_post, S5),
+                        % item 117
+                        if AllowMissingPost -> 
+                            % item 337
+                            {ContentTypesAccepted, S7} = 
+                                call(content_types_accepted, S6),
+                            % item 126
+                            if ContentTypesAccepted =:= [] -> 
+                                % item 339
+                                {_ProcessResult, S8} = 
+                                    process_post(S7),
+                                % item 314
+                                Location = 
+                                    get_resp_header(<<"Location">>, S8),
+                                % item 134
+                                if Location =/= undefined -> 
+                                    % item 137
+                                    % Created
+                                    respond(201, S8)
+                                ; true ->
+                                    % item 180
+                                    finalize(S8)
+                                end
+                            ; true ->
+                                % item 338
+                                % Unsupported MediaType
+                                respond(415, S7)
+                            end
+                        ; true ->
+                            % item 116
+                            % Not Found
+                            respond(404, S6)
+                        end
+                    end
                 end
+            ; true ->
+                % item 398
+                %
+                respond(413, S3)
             end
         ; true ->
-            % item 312
-            {ContentTypesAccepted, S3} = 
-                call(content_types_accepted, S2),
-            % item 81
-            if ContentTypesAccepted =:= [] -> 
-                % item 112
-                % Unsupported MediaType
-                respond(415, S3)
-            ; true ->
-                % item 315
-                {ProcessResult, S4} = 
-                    process_post(S3),
-                % item 325
-                if ProcessResult =:= true -> 
-                    % item 324
-                    S5 = encode_body_if_set(S4),
-                    % item 179
-                    finalize(S5)
-                ; true ->
-                    % item 323
-                    {redirect, Url} = ProcessResult,
-                    S5 = set_header_if_not_set(<<"Location">>, Url, S4),
-                    % item 100
-                    % See Other
-                    respond(303, S5)
-                end
-            end
+            % item 399
+            %
+            respond(415, S2)
         end
     ; true ->
-        % item 309
-        {PreviouslyExisted, S2} =
-            call(previously_existed, S1),
-        % item 104
-        if PreviouslyExisted -> 
-            % item 310
-            {MovedPermanently, S3} = 
-                call(moved_permanently, S2),
-            % item 113
-            if MovedPermanently -> 
-                % item 120
-                % Moved Permanently
-                respond(301, S3)
-            ; true ->
-                % item 311
-                {MovedTemporarily, S4} = 
-                    call(moved_temporarily, S3),
-                % item 121
-                if MovedTemporarily -> 
-                    % item 124
-                    % Moved Temporarily
-                    respond(410, S4)
-                ; true ->
-                    % item 125
-                    % Gone
-                    respond(410, S4)
-                end
-            end
-        ; true ->
-            % item 313
-            {AllowMissingPost, S3} = 
-                call(allow_missing_post, S2),
-            % item 117
-            if AllowMissingPost -> 
-                % item 337
-                {ContentTypesAccepted, S4} = 
-                    call(content_types_accepted, S3),
-                % item 126
-                if ContentTypesAccepted =:= [] -> 
-                    % item 339
-                    {_ProcessResult, S5} = 
-                        process_post(S4),
-                    % item 314
-                    Location = 
-                        get_resp_header(<<"Location">>, S5),
-                    % item 134
-                    if Location =/= undefined -> 
-                        % item 137
-                        % Created
-                        respond(200, S5)
-                    ; true ->
-                        % item 180
-                        finalize(S5)
-                    end
-                ; true ->
-                    % item 338
-                    % Unsupported MediaType
-                    respond(415, S4)
-                end
-            ; true ->
-                % item 116
-                % Not Found
-                respond(404, S3)
-            end
-        end
+        % item 400
+        % 
+        respond(501, S1)
     end
 .
 
