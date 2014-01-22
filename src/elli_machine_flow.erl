@@ -764,8 +764,7 @@ post_flow(State) ->
                                 respond(415, S6)
                             ; true ->
                                 % item 315
-                                {ProcessResult, S7} = 
-                                    process_post(S6),
+                                {ProcessResult, S7} = call(process_post, S6),
                                 % item 325
                                 if ProcessResult =:= true -> 
                                     % item 324
@@ -794,8 +793,7 @@ post_flow(State) ->
                                     respond(415, S6)
                                 ; true ->
                                     % item 315
-                                    {ProcessResult, S7} = 
-                                        process_post(S6),
+                                    {ProcessResult, S7} = call(process_post, S6),
                                     % item 325
                                     if ProcessResult =:= true -> 
                                         % item 324
@@ -832,8 +830,7 @@ post_flow(State) ->
                             respond(415, S6)
                         ; true ->
                             % item 315
-                            {ProcessResult, S7} = 
-                                process_post(S6),
+                            {ProcessResult, S7} = call(process_post, S6),
                             % item 325
                             if ProcessResult =:= true -> 
                                 % item 324
@@ -891,8 +888,7 @@ post_flow(State) ->
                             % item 126
                             if ContentTypesAccepted =:= [] -> 
                                 % item 339
-                                {_ProcessResult, S8} = 
-                                    process_post(S7),
+                                {_ProcessResult, S8} = call(process_post, S7),
                                 % item 314
                                 Location = 
                                     get_resp_header(<<"Location">>, S8),
@@ -971,9 +967,6 @@ get_resp_header(_Header, State) ->
 
 match_etag(_Tag, _TagList) ->
     false.
-
-process_post(State) ->
-    State.
 
 encode_body_if_set(State) ->
     State.
