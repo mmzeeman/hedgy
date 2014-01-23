@@ -40,6 +40,7 @@
     set_resp_code/2,
 
     set_resp_header/3,
+    set_resp_headers/2,
     get_resp_header/2,
 
     set_resp_body/2,
@@ -109,6 +110,10 @@ set_resp_code(Code, Exchange) ->
 % @doc Set a response header.
 set_resp_header(Header, Value, #machine_exchange{resp_headers=RespHeaders}=Exchange) ->
     Exchange#machine_exchange{resp_headers=[{Header, Value}|RespHeaders]}.
+
+% @doc Set the headers.
+set_resp_headers(Headers, #machine_exchange{resp_headers=RespHeaders}=Exchange) ->
+    Exchange#machine_exchange{resp_headers=RespHeaders++Headers}.
 
 % @doc Get a response header
 get_resp_header(Key, #machine_exchange{resp_headers=RespHeaders}) ->

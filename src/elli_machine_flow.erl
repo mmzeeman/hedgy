@@ -13,6 +13,57 @@
 
 
 
+accept_content_type(State) ->
+    % item 435
+    Req = request(State),
+    {ContentTypesProvided, S1} = call(content_types_provided, State),
+    AcceptHeader = get_header(<<"Accept">>, Req),
+    PTypes = [Type || {Type, _Fun} <- ContentTypesProvided],
+    % item 436
+    if AcceptHeader =:= undefined -> 
+        % item 438
+        S2 = set_resp_content_type(hd(PTypes), S1),
+        % item 443
+        {true, S2}
+    ; true ->
+        % item 439
+        ChosenMediaType = 
+            elli_machine_utile:choose_media_type(PTypes, AcceptHeader),
+        % item 440
+        if ChosenMediaType =:= none -> 
+            % item 446
+            {false, S1}
+        ; true ->
+            % item 441
+            S2 = set_resp_content_type(ChosenMediaType, S1),
+            % item 443
+            {true, S2}
+        end
+    end
+.
+
+accept_language(State) ->
+    % item 459
+    Req = request(State),
+    AcceptLanguageHeader = get_header(<<"Accept-Language">>, Req),
+    % item 460
+    if AcceptLanguageHeader =:= undefined -> 
+        % item 465
+        {true, State}
+    ; true ->
+        % item 462
+        {LanguageAvailable, S1} = call(language_available, State),
+        % item 463
+        if LanguageAvailable -> 
+            % item 466
+            {true, S1}
+        ; true ->
+            % item 467
+            {false, S1}
+        end
+    end
+.
+
 call(Name, State) ->
     % item 369
     elli_machine_controller:call(Name, State)
@@ -592,18 +643,23 @@ get_flow(State) ->
 .
 
 handle_request(State) ->
+    % item 407
+    Req = request(State),
     % item 270
     {Pong, S1} = call(ping, State),
     % item 217
     if Pong =:= pong -> 
         % item 271
-        {ServiceAvailable, S2} = call(service_available, S1),
+        {ServiceAvailable, S2} = 
+            call(service_available, S1),
         % item 220
         if ServiceAvailable -> 
             % item 274
-            {KnownMethods, S3} = call(known_methods, S2),
+            {KnownMethods, S3} = 
+                call(known_methods, S2),
             Method = elli_request:method(request(S3)),
-            IsKnownMethod = lists:member(Method, KnownMethods),
+            IsKnownMethod = 
+                lists:member(Method, KnownMethods),
             % item 223
             if IsKnownMethod -> 
                 % item 275
@@ -616,11 +672,13 @@ handle_request(State) ->
                 ; true ->
                     % item 276
                     {AllowedMethods, S5} = call(allowed_methods, S4),
-                    IsAllowedMethod = lists:member(Method, AllowedMethods),
+                    IsAllowedMethod = 
+                        lists:member(Method, AllowedMethods),
                     % item 231
                     if IsAllowedMethod -> 
                         % item 277
-                        {MalformedRequest, S6} = call(malformed_request, S5),
+                        {MalformedRequest, S6} = 
+                            call(malformed_request, S5),
                         % item 278
                         if MalformedRequest -> 
                             % item 280
@@ -639,37 +697,58 @@ handle_request(State) ->
                                     % Forbidden
                                     respond(403, S7)
                                 ; true ->
-                                    % item 2530001
-                                    if Method =:= 'GET' orelse 'HEAD' -> 
-                                        % item 264
-                                        get_flow(S8)
+                                    % item 402
+                                    if Method =:= 'OPTIONS' -> 
+                                        % item 268
+                                        options_flow(S8)
                                     ; true ->
-                                        % item 2530002
-                                        if Method =:= 'POST' -> 
-                                            % item 265
-                                            post_flow(S8)
-                                        ; true ->
-                                            % item 2530003
-                                            if Method =:= 'PUT' -> 
-                                                % item 266
-                                                put_flow(S8)
-                                            ; true ->
-                                                % item 2530004
-                                                if Method =:= 'DELETE' -> 
-                                                    % item 267
-                                                    delete_flow(S8)
+                                        % item 447
+                                        {ContentTypeAccepted, S9} = accept_content_type(S8),
+                                        % item 448
+                                        if ContentTypeAccepted -> 
+                                            % item 450
+                                            {LanguageAccepted, S10} = accept_language(S9),
+                                            % item 451
+                                            if LanguageAccepted -> 
+                                                % item 428
+                                                {Variances, S11} = variances(S10),
+                                                S12 = set_variances(Variances, S11),
+                                                % item 2530001
+                                                if Method =:= 'GET' orelse 'HEAD' -> 
+                                                    % item 264
+                                                    get_flow(S12)
                                                 ; true ->
-                                                    % item 2530005
-                                                    if Method =:= 'OPTIONS' -> 
-                                                        []
+                                                    % item 2530002
+                                                    if Method =:= 'POST' -> 
+                                                        % item 265
+                                                        post_flow(S12)
                                                     ; true ->
-                                                        % item 2530006
-                                                        throw("Unexpected switch value")
-                                                    end,
-                                                    % item 268
-                                                    options_flow(S8)
+                                                        % item 2530003
+                                                        if Method =:= 'PUT' -> 
+                                                            % item 266
+                                                            put_flow(S12)
+                                                        ; true ->
+                                                            % item 2530004
+                                                            if Method =:= 'DELETE' -> 
+                                                                []
+                                                            ; true ->
+                                                                % item 2530005
+                                                                throw("Unexpected switch value")
+                                                            end,
+                                                            % item 267
+                                                            delete_flow(S12)
+                                                        end
+                                                    end
                                                 end
+                                            ; true ->
+                                                % item 424
+                                                % Not Acceptable
+                                                respond(406, S10)
                                             end
+                                        ; true ->
+                                            % item 417
+                                            % Not Acceptable
+                                            respond(406, S8)
                                         end
                                     end
                                 end
@@ -719,7 +798,13 @@ has_resp_body(State) ->
 
 options_flow(State) ->
     % item 387
-    State
+    {Hdrs, S1} = call(options, State),
+    Exc = exchange(State),
+    Exc1 = emx:set_resp_headers(Hdrs, Exc),
+    S2 = set_exchange(Exc1, S1),
+    % item 401
+    % Ok
+    respond(200, S2)
 .
 
 post_flow(State) ->
