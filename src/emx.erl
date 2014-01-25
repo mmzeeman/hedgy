@@ -43,6 +43,13 @@
     set_resp_headers/2,
     get_resp_header/2,
 
+    get_resp_content_type/1,
+    set_resp_content_type/2,
+    get_resp_content_fun/1,
+    set_resp_content_fun/2,
+    get_resp_chosen_charset/1,
+    set_resp_chosen_charset/2,
+
     set_resp_body/2,
     get_resp_body/1,
 
@@ -129,30 +136,45 @@ get_resp_body(ReqData) ->
 
 % @doc Returns true iff the request has a response body.
 -spec has_resp_body(elli_machine:exchange()) -> false.
-has_resp_body(#machine_exchange{resp_body=undefined}) ->
+has_resp_body(#machine_exchange{resp_body= <<>>}) ->
     false;
 has_resp_body(_) ->
     true.
 
+set_resp_content_type(Val, Exchange) ->
+    Exchange#machine_exchange{content_type=Val}.
+
+get_resp_content_type(Exchange) ->
+    Exchange#machine_exchange.content_type.
+
+set_resp_content_fun(Val, Exchange) ->
+    Exchange#machine_exchange{content_fun=Val}.
+
+get_resp_content_fun(Exchange) ->
+    Exchange#machine_exchange.content_fun.
+
+set_resp_chosen_charset(Val, Exchange) ->
+    Exchange#machine_exchange{chosen_charset=Val}.
+
+get_resp_chosen_charset(Exchange) ->
+    Exchange#machine_exchange.chosen_charset.
+
+
 % @doc Sets metadata
-set_metadata('content-type', Val, ReqData) ->
-    {ok, ReqData#machine_exchange{'content-type' = Val}};
-set_metadata('content-encoding', Val, ReqData) ->
-    {ok, ReqData#machine_exchange{'content-encoding' = Val}};
-set_metadata('chosen-charset', Val, ReqData) ->
-    {ok, ReqData#machine_exchange{'chosen-charset' = Val}};
-set_metadata('mediaparams', Val, ReqData) ->
-    {ok, ReqData#machine_exchange{'mediaparams' = Val}}.
+set_metadata('content-encoding', Val, Exchange) ->
+    {ok, Exchange#machine_exchange{content_encoding = Val}};
+set_metadata('chosen-charset', Val, Exchange) ->
+    {ok, Exchange#machine_exchange{chosen_charset = Val}};
+set_metadata('mediaparams', Val, Exchange) ->
+    {ok, Exchange#machine_exchange{mediaparams = Val}}.
 
 % @doc Get metadata.
-get_metadata('content-type', ReqData) ->
-    ReqData#machine_exchange.'content-type';
-get_metadata('content-encoding', ReqData) ->
-    ReqData#machine_exchange.'content-encoding';
-get_metadata('chosen-charset', ReqData) ->
-    ReqData#machine_exchange.'chosen-charset';
-get_metadata('mediaparams', ReqData) ->
-    ReqData#machine_exchange.'mediaparams'.
+get_metadata(content_encoding, Exchange) ->
+    Exchange#machine_exchange.content_encoding;
+get_metadata(chosen_charset, Exchange) ->
+    Exchange#machine_exchange.chosen_charset;
+get_metadata(mediaparams, Exchange) ->
+    Exchange#machine_exchange.mediaparams.
 
 
 

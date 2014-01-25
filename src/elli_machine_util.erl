@@ -61,6 +61,8 @@ choose_media_type(Provided, AcceptHead) ->
     choose_media_type1(Prov1, Requested).
 
 % @doc Select a charset.
+choose_charset(no_charset, _) ->
+    no_charset;
 choose_charset(CSets, AccCharHdr) ->
     do_choose(CSets, AccCharHdr, <<"ISO-8859-1">>).
 

@@ -52,7 +52,8 @@ handle({no_dispatch_match, _ReqData}, _Args) ->
     ignore; 
 handle(FlowState, _Args) ->
     case elli_machine_flow:handle_request(FlowState) of
-        {_, FlowFin} -> 
+        {Code, FlowFin} ->
+            io:fwrite(standard_error, "received: ~p~n~n", [Code]),
             emx:response(FlowFin#machine_flow_state.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
@@ -73,7 +74,7 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
         {{no_dispatch_match, _Host, _PathSpec}, ReqData} ->
             {no_dispatch_match, ReqData};
         {{ControllerMod, ControllerOpts, 
-          _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, ReqData} ->
+          _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, _ReqData} ->
             {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts),
             #machine_flow_state{exchange=emx:make_exchange(Req), 
                           controller_mod=ControllerMod, controller_state=ControllerState}

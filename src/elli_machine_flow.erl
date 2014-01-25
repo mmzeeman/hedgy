@@ -13,31 +13,88 @@
 
 
 
+accept_charset(State) ->
+    % item 517
+    CheckCharset = get_header(<<"Accept-Charset">>, State, <<"*">>),
+    {CharsetsAvailable, S1} = call(charsets_provided, State),
+    % item 562
+    if CharsetsAvailable =:= no_charset -> 
+        % item 565
+        {true, [], S1}
+    ; true ->
+        % item 564
+        ChosenCharset = 
+            elli_machine_util:choose_charset(CharsetsAvailable, CheckCharset),
+        % item 524
+        if ChosenCharset =:= none -> 
+            % item 527
+            {false, [], S1}
+        ; true ->
+            % item 534
+            S2 = set_resp_chosen_charset(ChosenCharset, S1),
+            {true, CharsetsAvailable, S2}
+        end
+    end
+.
+
+accept_content_encoding(State) ->
+    % item 537
+    CheckEncoding = get_header(<<"Accept-Encoding">>, 
+        State, <<"identity;q=1.0,*;q=0.5">>),
+    
+    {EncodingsProvided, S1} = call(content_encodings_provided, State),
+    
+    
+    ChosenContentEncoding = 
+        elli_machine_util:choose_encoding(EncodingsProvided, CheckEncoding),
+    
+    io:fwrite(standard_error, "encoding: ~p~n", [ChosenContentEncoding]),
+    % item 538
+    if ChosenContentEncoding =:= none -> 
+        % item 541
+        {false, [], State}
+    ; true ->
+        % item 515
+        {true, EncodingsProvided, State}
+    end
+.
+
 accept_content_type(State) ->
     % item 435
-    Req = request(State),
     {ContentTypesProvided, S1} = call(content_types_provided, State),
-    AcceptHeader = get_header(<<"Accept">>, Req),
-    PTypes = [Type || {Type, _Fun} <- ContentTypesProvided],
+    
+    io:fwrite(standard_error, "provided: ~p~n", [ContentTypesProvided]),
+    
+    AcceptHeader = get_header(<<"Accept">>, State, undefined),
     % item 436
     if AcceptHeader =:= undefined -> 
-        % item 438
-        S2 = set_resp_content_type(hd(PTypes), S1),
-        % item 443
-        {true, S2}
+        % item 500
+        {Ct, Cf} = hd(ContentTypesProvided),
+        S2 = with_exchange(fun(Ex) ->
+                Ex1 = emx:set_resp_content_type(Ct, Ex),
+                emx:set_resp_content_fun(Cf, Ex1) 
+             end, S1),
+        {true, ContentTypesProvided, S2}
     ; true ->
         % item 439
+        ContentTypes = [Type || {Type, _Fun} <- ContentTypesProvided],
         ChosenMediaType = 
-            elli_machine_utile:choose_media_type(PTypes, AcceptHeader),
+            elli_machine_util:choose_media_type(ContentTypes, AcceptHeader),
         % item 440
         if ChosenMediaType =:= none -> 
             % item 446
-            {false, S1}
+            {false, [], S1}
         ; true ->
-            % item 441
-            S2 = set_resp_content_type(ChosenMediaType, S1),
-            % item 443
-            {true, S2}
+            % item 535
+            {ChosenMediaType, Fun} = 
+                proplists:lookup(ChosenMediaType, ContentTypesProvided),
+            
+            S2 = with_exchange(fun(Ex) ->
+                    Ex1 = emx:set_resp_content_type(ChosenMediaType, Ex),
+                    emx:set_resp_content_fun(Fun, Ex1) 
+                 end, S1),
+            
+            {true, ContentTypesProvided, S2}
         end
     end
 .
@@ -45,7 +102,8 @@ accept_content_type(State) ->
 accept_language(State) ->
     % item 459
     Req = request(State),
-    AcceptLanguageHeader = get_header(<<"Accept-Language">>, Req),
+    AcceptLanguageHeader = 
+    	elli_request:get_header(<<"Accept-Language">>, Req),
     % item 460
     if AcceptLanguageHeader =:= undefined -> 
         % item 465
@@ -66,7 +124,69 @@ accept_language(State) ->
 
 call(Name, State) ->
     % item 369
+    io:fwrite(standard_error, "controller_call: ~p~n", [Name]),
     elli_machine_controller:call(Name, State)
+.
+
+content_negotiation(State) ->
+    % item 478
+    {ContentTypeAccepted, ContentTypesAvailable, S1} =
+         accept_content_type(State),
+    % item 479
+    if ContentTypeAccepted -> 
+        % item 484
+        {LanguageAccepted, S2} = accept_language(S1),
+        % item 485
+        if LanguageAccepted -> 
+            % item 491
+            {CharsetAccepted, CharsetsAvailable, S3} = accept_charset(S2),
+            % item 492
+            if CharsetAccepted -> 
+                % item 495
+                {ContentEncodingAccepted, ContentEncodingsAvailable, S4} = 
+                    accept_content_encoding(S3),
+                % item 497
+                if ContentEncodingAccepted -> 
+                    % item 536
+                    %% Set Content-Type header
+                    S5 = with_exchange(fun(Exchange) ->
+                            CType = emx:get_resp_content_type(Exchange),
+                            CSet = case emx:get_resp_chosen_charset(Exchange) of
+                                undefined -> <<"">>;
+                                Cs -> <<"; charset=", Cs/binary>>
+                            end,
+                            emx:set_resp_header(<<"Content-Type">>, 
+                            <<CType/binary, CSet/binary>>, Exchange) 
+                         end, S4),
+                    % item 561
+                    %% Set Vary header
+                    
+                    V1 = add_variance(ContentTypesAvailable, <<"Accept">>, []),
+                    V2 = add_variance(CharsetsAvailable, <<"Accept-Charset">>, V1),
+                    V3 = add_variance(ContentEncodingsAvailable, <<"Accept-Encoding">>, V2),
+                    {ControllerVariances, S6} = call(variances, S5),
+                    Variances = ControllerVariances ++ V3,
+                    
+                    S7 = set_resp_header(<<"Vary">>, 
+                        elli_machine_util:binary_join(Variances, <<", ">>), S6),
+                    % item 483
+                    {true, S7}
+                ; true ->
+                    % item 499
+                    {false, S4}
+                end
+            ; true ->
+                % item 494
+                {false, S3}
+            end
+        ; true ->
+            % item 488
+            {false, S2}
+        end
+    ; true ->
+        % item 482
+        {false, S1}
+    end
 .
 
 delete_flow(State) ->
@@ -145,11 +265,10 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = S7, 
                             
-                            % call(provide_content, S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                             
-                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                             % item 187
                             finalize(S8)
                         end
@@ -157,11 +276,10 @@ get_flow(State) ->
                 ; true ->
                     % item 46
                     S7 = set_last_modified(LastModified, S6),
-                    S8 = S7, 
                     
-                    % call(provide_content, S7),
+                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                     
-                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                     % item 187
                     finalize(S8)
                 end
@@ -197,11 +315,10 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = S7, 
                                 
-                                % call(provide_content, S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                 
-                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -209,11 +326,10 @@ get_flow(State) ->
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
-                        S8 = S7, 
                         
-                        % call(provide_content, S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                         
-                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                         % item 187
                         finalize(S8)
                     end
@@ -250,11 +366,10 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = S7, 
                                     
-                                    % call(provide_content, S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                     
-                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -262,11 +377,10 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = S7, 
                             
-                            % call(provide_content, S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                             
-                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                             % item 187
                             finalize(S8)
                         end
@@ -306,11 +420,10 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = S7, 
                                 
-                                % call(provide_content, S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                 
-                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -318,11 +431,10 @@ get_flow(State) ->
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
-                        S8 = S7, 
                         
-                        % call(provide_content, S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                         
-                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                         % item 187
                         finalize(S8)
                     end
@@ -358,11 +470,10 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = S7, 
                                     
-                                    % call(provide_content, S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                     
-                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -370,11 +481,10 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = S7, 
                             
-                            % call(provide_content, S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                             
-                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                             % item 187
                             finalize(S8)
                         end
@@ -411,11 +521,10 @@ get_flow(State) ->
                                     ; true ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
-                                        S8 = S7, 
                                         
-                                        % call(provide_content, S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                         
-                                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                         % item 187
                                         finalize(S8)
                                     end
@@ -423,11 +532,10 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = S7, 
                                 
-                                % call(provide_content, S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                 
-                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -470,11 +578,10 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = S7, 
                                     
-                                    % call(provide_content, S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                     
-                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -482,11 +589,10 @@ get_flow(State) ->
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
-                            S8 = S7, 
                             
-                            % call(provide_content, S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                             
-                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                             % item 187
                             finalize(S8)
                         end
@@ -522,11 +628,10 @@ get_flow(State) ->
                                     ; true ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
-                                        S8 = S7, 
                                         
-                                        % call(provide_content, S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                         
-                                        io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                         % item 187
                                         finalize(S8)
                                     end
@@ -534,11 +639,10 @@ get_flow(State) ->
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
-                                S8 = S7, 
                                 
-                                % call(provide_content, S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                 
-                                io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                 % item 187
                                 finalize(S8)
                             end
@@ -575,11 +679,10 @@ get_flow(State) ->
                                         ; true ->
                                             % item 46
                                             S7 = set_last_modified(LastModified, S6),
-                                            S8 = S7, 
                                             
-                                            % call(provide_content, S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                             
-                                            io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                             % item 187
                                             finalize(S8)
                                         end
@@ -587,11 +690,10 @@ get_flow(State) ->
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
-                                    S8 = S7, 
                                     
-                                    % call(provide_content, S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
                                     
-                                    io:fwrite(standard_error, "State: ~p~n", [exchange(S8)]),
+                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
                                     % item 187
                                     finalize(S8)
                                 end
@@ -639,6 +741,14 @@ get_flow(State) ->
             % Not Found
             error(404, S2)
         end
+    end
+.
+
+get_header(Name, State, Default) ->
+    % item 547
+    case elli_request:get_header(Name, request(State)) of
+        undefined -> Default;
+        Hdr -> Hdr
     end
 .
 
@@ -702,48 +812,36 @@ handle_request(State) ->
                                         % item 268
                                         options_flow(S8)
                                     ; true ->
-                                        % item 447
-                                        {ContentTypeAccepted, S9} = accept_content_type(S8),
+                                        % item 489
+                                        {ContentAccepted, S9} = content_negotiation(S8),
                                         % item 448
-                                        if ContentTypeAccepted -> 
-                                            % item 450
-                                            {LanguageAccepted, S10} = accept_language(S9),
-                                            % item 451
-                                            if LanguageAccepted -> 
-                                                % item 428
-                                                {Variances, S11} = variances(S10),
-                                                S12 = set_variances(Variances, S11),
-                                                % item 2530001
-                                                if Method =:= 'GET' orelse 'HEAD' -> 
-                                                    % item 264
-                                                    get_flow(S12)
+                                        if ContentAccepted -> 
+                                            % item 2530001
+                                            if Method =:= 'GET' orelse 'HEAD' -> 
+                                                % item 264
+                                                get_flow(S9)
+                                            ; true ->
+                                                % item 2530002
+                                                if Method =:= 'POST' -> 
+                                                    % item 265
+                                                    post_flow(S9)
                                                 ; true ->
-                                                    % item 2530002
-                                                    if Method =:= 'POST' -> 
-                                                        % item 265
-                                                        post_flow(S12)
+                                                    % item 2530003
+                                                    if Method =:= 'PUT' -> 
+                                                        % item 266
+                                                        put_flow(S9)
                                                     ; true ->
-                                                        % item 2530003
-                                                        if Method =:= 'PUT' -> 
-                                                            % item 266
-                                                            put_flow(S12)
+                                                        % item 2530004
+                                                        if Method =:= 'DELETE' -> 
+                                                            []
                                                         ; true ->
-                                                            % item 2530004
-                                                            if Method =:= 'DELETE' -> 
-                                                                []
-                                                            ; true ->
-                                                                % item 2530005
-                                                                throw("Unexpected switch value")
-                                                            end,
-                                                            % item 267
-                                                            delete_flow(S12)
-                                                        end
+                                                            % item 2530005
+                                                            throw("Unexpected switch value")
+                                                        end,
+                                                        % item 267
+                                                        delete_flow(S9)
                                                     end
                                                 end
-                                            ; true ->
-                                                % item 424
-                                                % Not Acceptable
-                                                respond(406, S10)
                                             end
                                         ; true ->
                                             % item 417
@@ -1031,9 +1129,40 @@ respond(Code, State) ->
     {Code, State}
 .
 
+set_exchange(Exchange, State) ->
+    % item 553
+    State#machine_flow_state{exchange=Exchange}
+.
+
+with_exchange(Fun, State) ->
+    % item 572
+    Exchange = Fun(State#machine_flow_state.exchange),
+    State#machine_flow_state{exchange=Exchange}
+.
+
 %%
 %% Helpers
 %%
+
+% @doc Add a variance if needed.
+add_variance([], _, Variances) ->
+    Variances;
+add_variance([_], _, Variances) ->
+    Variances;
+add_variance(_, Name, Variances) ->
+    [Name | Variances].
+
+% @doc Set the response's content type
+set_resp_content_type(ContentType, State) ->
+    Ex = emx:set_resp_content_type(ContentType, exchange(State)),
+    set_exchange(Ex, State).
+
+
+% @doc Set the response's chosen charset
+set_resp_chosen_charset(Charset, State) ->
+    Ex = emx:set_resp_chosen_charset(Charset, exchange(State)),
+    set_exchange(Ex, State).
+    
 
 set_etag(_Tag, State) ->
     State.
@@ -1042,6 +1171,7 @@ set_expires(_Expires, State) ->
     State.
 
 set_last_modified(_LastModified, State) ->
+    io:fwrite(standard_error, "TODOL set_last_modified~n", []),
     State.
 
 set_resp_header(_Header, _Value, State) ->

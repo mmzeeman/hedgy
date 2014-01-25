@@ -14,9 +14,13 @@
     %%
     host :: undefined | binary(),
 
-    'content-type' :: undefined | binary(),    
-    'content-encoding' :: undefined | binary(),
-    'chosen-charset' :: undefined | binary(),
-    'mediaparams' :: any()
+    %% 
+    content_type :: undefined | binary(),
+    content_fun :: undefined | atom(),
+
+    content_encoding :: undefined | binary(),
+    chosen_charset :: undefined | binary(),
+    
+    mediaparams :: any()
 }).
 
