@@ -36,21 +36,6 @@ post_test() ->
                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
     ok.
 
-content_md5_test() ->
-    Config = config(),
-    ?assertEqual({200, [{<<"Content-Encoding">>,<<"identity">>},
-                        {<<"Content-Type">>,<<"text/html">>}], <<>>},
-                 elli_test:call('POST', <<"/post">>, 
-                    [{<<"Host">>, <<"example.com">>}, 
-                     {<<"Content-Md5">>, <<"ulefm731m09zxwDJCm07qw==">>}], 
-                    <<"Hoi piepeloi">>, Config)),
-    ?assertEqual({400, [], <<>>},
-                 elli_test:call('POST', <<"/post">>, 
-                    [{<<"Host">>, <<"example.com">>}, 
-                     {<<"Content-Md5">>, <<"ulefm631m09zxwDJCm07qw==">>}], 
-                    <<"Hoi piepeloi">>, Config)),
-    ok.
-
 ws_test() ->
     Config = config(),
     ?assertEqual({200, [{<<"Content-Encoding">>,<<"identity">>},
@@ -67,7 +52,7 @@ ws_test() ->
 
 get_test() ->
     Config = config(),
-    ?assertEqual({405, [{<<"Allow">>,"POST"}], <<>>},
+    ?assertEqual({405, [{<<"Allow">>, <<"POST">>}], <<>>},
                  elli_test:call('GET', <<"/post">>, 
                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
     

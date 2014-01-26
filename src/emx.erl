@@ -45,8 +45,10 @@
 
     get_resp_content_type/1,
     set_resp_content_type/2,
+    
     get_resp_content_fun/1,
     set_resp_content_fun/2,
+
     get_resp_chosen_charset/1,
     set_resp_chosen_charset/2,
 

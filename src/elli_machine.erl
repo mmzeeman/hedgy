@@ -118,13 +118,11 @@ not_found_test() ->
 
 hello_world_test() ->
     Config = config(),
-    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
-                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+    ?assertEqual({200, [{<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
                  elli_test:call('GET', <<"/hello">>, 
                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
 
-    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
-                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+    ?assertEqual({200, [{<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
                  elli_test:call('GET', <<"/hello">>, [], <<>>, Config)),
 
     ok.
@@ -132,8 +130,7 @@ hello_world_test() ->
 head_test() ->
     %% Note: elli removes the body.
     Config = config(),
-    ?assertEqual({200, [{<<"Content-Encoding">>, <<"identity">>},
-                        {<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+    ?assertEqual({200, [{<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
                  elli_test:call('HEAD', <<"/hello">>, 
                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
     ok.
@@ -141,7 +138,7 @@ head_test() ->
 four_o_five_test() ->
     Config = config(),
 
-    ?assertEqual({405, [{<<"Allow">>,"GET, HEAD"}], <<>>},
+    ?assertEqual({405, [{<<"Allow">>, <<"GET, HEAD">>}], <<>>},
                  elli_test:call('POST', <<"/hello">>, 
                     [{<<"Host">>, <<"example.com">>}], <<"test=123">>, Config)),
 

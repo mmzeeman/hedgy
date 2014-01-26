@@ -41,30 +41,31 @@ accept_content_encoding(State) ->
     % item 537
     CheckEncoding = get_header(<<"Accept-Encoding">>, 
         State, <<"identity;q=1.0,*;q=0.5">>),
-    
     {EncodingsProvided, S1} = call(content_encodings_provided, State),
-    
-    
     ChosenContentEncoding = 
         elli_machine_util:choose_encoding(EncodingsProvided, CheckEncoding),
-    
-    io:fwrite(standard_error, "encoding: ~p~n", [ChosenContentEncoding]),
     % item 538
     if ChosenContentEncoding =:= none -> 
         % item 541
         {false, [], State}
     ; true ->
+        % item 574
+        S2 = case ChosenContentEncoding of
+            <<"identity">> -> 
+                S1;
+            _ ->
+                Ex1 = emx:set_resp_header(<<"Content-Encoding">>, 
+                    ChosenContentEncoding, exchange(S1)), 
+                set_exchange(Ex1, S1)
+        end,
         % item 515
-        {true, EncodingsProvided, State}
+        {true, EncodingsProvided, S2}
     end
 .
 
 accept_content_type(State) ->
     % item 435
     {ContentTypesProvided, S1} = call(content_types_provided, State),
-    
-    io:fwrite(standard_error, "provided: ~p~n", [ContentTypesProvided]),
-    
     AcceptHeader = get_header(<<"Accept">>, State, undefined),
     % item 436
     if AcceptHeader =:= undefined -> 
@@ -124,7 +125,6 @@ accept_language(State) ->
 
 call(Name, State) ->
     % item 369
-    io:fwrite(standard_error, "controller_call: ~p~n", [Name]),
     elli_machine_controller:call(Name, State)
 .
 
@@ -159,18 +159,21 @@ content_negotiation(State) ->
                             <<CType/binary, CSet/binary>>, Exchange) 
                          end, S4),
                     % item 561
-                    %% Set Vary header
-                    
                     V1 = add_variance(ContentTypesAvailable, <<"Accept">>, []),
                     V2 = add_variance(CharsetsAvailable, <<"Accept-Charset">>, V1),
                     V3 = add_variance(ContentEncodingsAvailable, <<"Accept-Encoding">>, V2),
                     {ControllerVariances, S6} = call(variances, S5),
                     Variances = ControllerVariances ++ V3,
-                    
-                    S7 = set_resp_header(<<"Vary">>, 
-                        elli_machine_util:binary_join(Variances, <<", ">>), S6),
-                    % item 483
-                    {true, S7}
+                    % item 575
+                    if Variances =:= [] -> 
+                        % item 578
+                        {true, S6}
+                    ; true ->
+                        % item 483
+                        S7 = set_resp_header(<<"Vary">>, 
+                            elli_machine_util:binary_join(Variances, <<", ">>), S6),
+                        {true, S7}
+                    end
                 ; true ->
                     % item 499
                     {false, S4}
@@ -266,22 +269,24 @@ get_flow(State) ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
                             
-                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                            
-                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
                             % item 187
-                            finalize(S8)
+                            finalize(S9)
                         end
                     end
                 ; true ->
                     % item 46
                     S7 = set_last_modified(LastModified, S6),
                     
-                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                    
-                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                    Ex = exchange(S7),
+                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                    Ex1 = emx:set_resp_body(Response, Ex),
+                    S9 = set_exchange(Ex1, S8),
                     % item 187
-                    finalize(S8)
+                    finalize(S9)
                 end
             ; true ->
                 % item 289
@@ -316,22 +321,24 @@ get_flow(State) ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
                                 
-                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                
-                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
                                 % item 187
-                                finalize(S8)
+                                finalize(S9)
                             end
                         end
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
                         
-                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                        
-                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                        Ex = exchange(S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                        Ex1 = emx:set_resp_body(Response, Ex),
+                        S9 = set_exchange(Ex1, S8),
                         % item 187
-                        finalize(S8)
+                        finalize(S9)
                     end
                 ; true ->
                     % item 57
@@ -367,22 +374,24 @@ get_flow(State) ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
                                     
-                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                    
-                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
                                     % item 187
-                                    finalize(S8)
+                                    finalize(S9)
                                 end
                             end
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
                             
-                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                            
-                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
                             % item 187
-                            finalize(S8)
+                            finalize(S9)
                         end
                     end
                 end
@@ -421,22 +430,24 @@ get_flow(State) ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
                                 
-                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                
-                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
                                 % item 187
-                                finalize(S8)
+                                finalize(S9)
                             end
                         end
                     ; true ->
                         % item 46
                         S7 = set_last_modified(LastModified, S6),
                         
-                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                        
-                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                        Ex = exchange(S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                        Ex1 = emx:set_resp_body(Response, Ex),
+                        S9 = set_exchange(Ex1, S8),
                         % item 187
-                        finalize(S8)
+                        finalize(S9)
                     end
                 ; true ->
                     % item 289
@@ -471,22 +482,24 @@ get_flow(State) ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
                                     
-                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                    
-                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
                                     % item 187
-                                    finalize(S8)
+                                    finalize(S9)
                                 end
                             end
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
                             
-                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                            
-                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
                             % item 187
-                            finalize(S8)
+                            finalize(S9)
                         end
                     ; true ->
                         % item 57
@@ -522,22 +535,24 @@ get_flow(State) ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
                                         
-                                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                        
-                                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
                                         % item 187
-                                        finalize(S8)
+                                        finalize(S9)
                                     end
                                 end
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
                                 
-                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                
-                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
                                 % item 187
-                                finalize(S8)
+                                finalize(S9)
                             end
                         end
                     end
@@ -579,22 +594,24 @@ get_flow(State) ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
                                     
-                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                    
-                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
                                     % item 187
-                                    finalize(S8)
+                                    finalize(S9)
                                 end
                             end
                         ; true ->
                             % item 46
                             S7 = set_last_modified(LastModified, S6),
                             
-                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                            
-                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
                             % item 187
-                            finalize(S8)
+                            finalize(S9)
                         end
                     ; true ->
                         % item 289
@@ -629,22 +646,24 @@ get_flow(State) ->
                                         % item 46
                                         S7 = set_last_modified(LastModified, S6),
                                         
-                                        {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                        
-                                        io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
                                         % item 187
-                                        finalize(S8)
+                                        finalize(S9)
                                     end
                                 end
                             ; true ->
                                 % item 46
                                 S7 = set_last_modified(LastModified, S6),
                                 
-                                {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                
-                                io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
                                 % item 187
-                                finalize(S8)
+                                finalize(S9)
                             end
                         ; true ->
                             % item 57
@@ -680,22 +699,24 @@ get_flow(State) ->
                                             % item 46
                                             S7 = set_last_modified(LastModified, S6),
                                             
-                                            {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                            
-                                            io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                            Ex = exchange(S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                            Ex1 = emx:set_resp_body(Response, Ex),
+                                            S9 = set_exchange(Ex1, S8),
                                             % item 187
-                                            finalize(S8)
+                                            finalize(S9)
                                         end
                                     end
                                 ; true ->
                                     % item 46
                                     S7 = set_last_modified(LastModified, S6),
                                     
-                                    {Response, S8} = call(emx:get_resp_content_fun(exchange(S7)), S7),
-                                    
-                                    io:fwrite(standard_error, "Got response: ~p~n", [Response]),
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
                                     % item 187
-                                    finalize(S8)
+                                    finalize(S9)
                                 end
                             end
                         end
@@ -865,8 +886,9 @@ handle_request(State) ->
                         end
                     ; true ->
                         % item 250
-                        SAllow = set_resp_header(
-                            <<"Allow">>, AllowedMethods, S5),
+                        BinMethods = [ erlang:atom_to_binary(M, latin1) || M <- AllowedMethods], 
+                        HeaderValues = elli_machine_util:binary_join(BinMethods, <<", ">>),
+                        SAllow = set_resp_header(<<"Allow">>, HeaderValues, S5),
                         
                         % Method Not Allowed
                         respond(405, SAllow)
@@ -1125,8 +1147,12 @@ request(State) ->
 .
 
 respond(Code, State) ->
+    % item 573
+    Ex = exchange(State),
+    Ex1 = emx:set_resp_code(Code, Ex),
+    S1 = set_exchange(Ex1, State),
     % item 385
-    {Code, State}
+    {Code, S1}
 .
 
 set_exchange(Exchange, State) ->
@@ -1152,11 +1178,6 @@ add_variance([_], _, Variances) ->
 add_variance(_, Name, Variances) ->
     [Name | Variances].
 
-% @doc Set the response's content type
-set_resp_content_type(ContentType, State) ->
-    Ex = emx:set_resp_content_type(ContentType, exchange(State)),
-    set_exchange(Ex, State).
-
 
 % @doc Set the response's chosen charset
 set_resp_chosen_charset(Charset, State) ->
@@ -1174,8 +1195,9 @@ set_last_modified(_LastModified, State) ->
     io:fwrite(standard_error, "TODOL set_last_modified~n", []),
     State.
 
-set_resp_header(_Header, _Value, State) ->
-    State.
+set_resp_header(Header, Value, #machine_flow_state{exchange=Ex}=S) ->
+    Ex1 = emx:set_resp_header(Header, Value, Ex),
+    S#machine_flow_state{exchange=Ex1}.
 
 get_resp_header(_Header, State) ->
     {undefined, State}.
