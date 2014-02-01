@@ -91,7 +91,7 @@ its return value should be evident from examining the [[Diagram]].
 | `options` | `[]` | |
 | `allowed_methods` | `[` `'GET'` , `'HEAD'` `]` | |
 | `known_methods` | `[` `'GET'`, `'HEAD'`, `'POST'`, `'PUT'`, `'DELETE'`, `'TRACE'`, `'CONNECT'`, `'OPTIONS'` `]` | |
-| `content_types_provided` | `[` `{` `<<"text/html">>`, `to_html` `}` `]` | |
+| `content_types_provided` | `[{<<"text/html">>, to_html}]` | |
 | `content_types_accepted` | `[{<<"*/*">>, process}]` | |
 | `delete_resource` | `false` | |
 | `delete_completed` | `true` | |
