@@ -958,29 +958,21 @@ post_flow(State) ->
                         % item 75
                         if IfModifiedSince =:= undefined -> 
                             % item 312
-                            
-                            ContentTypeHeader =
-                                elli_request:get_header(
-                            	<<"Content-Type">>, Req, <<"application/octet-stream">>),
-                            {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
-                            SelectedContentType = 
-                                elli_machine_util:select_content_type(ContentTypesAccepted, 
-                                    ContentTypeHeader),
+                            {SelectedContentType, S6} = 
+                                select_content_type(S5),
                             % item 81
                             if SelectedContentType =:= none -> 
                                 % item 112
                                 % Unsupported MediaType
                                 respond(415, S6)
                             ; true ->
-                                % item 582
-                                {_, ProcessFun} = SelectedContentType,
                                 % item 315
+                                {_, ProcessFun} = SelectedContentType,
                                 {ProcessResult, S7} = call(ProcessFun, S6),
+                                S8 = encode_body_if_set(S7),
                                 % item 325
                                 if ProcessResult =:= true -> 
                                     % item 324
-                                    S8 = encode_body_if_set(S7),
-                                    % item 179
                                     finalize(S8)
                                 ; true ->
                                     % item 323
@@ -995,29 +987,21 @@ post_flow(State) ->
                             % item 181
                             if LastModified > IfModifiedSince -> 
                                 % item 312
-                                
-                                ContentTypeHeader =
-                                    elli_request:get_header(
-                                	<<"Content-Type">>, Req, <<"application/octet-stream">>),
-                                {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
-                                SelectedContentType = 
-                                    elli_machine_util:select_content_type(ContentTypesAccepted, 
-                                        ContentTypeHeader),
+                                {SelectedContentType, S6} = 
+                                    select_content_type(S5),
                                 % item 81
                                 if SelectedContentType =:= none -> 
                                     % item 112
                                     % Unsupported MediaType
                                     respond(415, S6)
                                 ; true ->
-                                    % item 582
-                                    {_, ProcessFun} = SelectedContentType,
                                     % item 315
+                                    {_, ProcessFun} = SelectedContentType,
                                     {ProcessResult, S7} = call(ProcessFun, S6),
+                                    S8 = encode_body_if_set(S7),
                                     % item 325
                                     if ProcessResult =:= true -> 
                                         % item 324
-                                        S8 = encode_body_if_set(S7),
-                                        % item 179
                                         finalize(S8)
                                     ; true ->
                                         % item 323
@@ -1040,29 +1024,21 @@ post_flow(State) ->
                         end
                     ; true ->
                         % item 312
-                        
-                        ContentTypeHeader =
-                            elli_request:get_header(
-                        	<<"Content-Type">>, Req, <<"application/octet-stream">>),
-                        {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
-                        SelectedContentType = 
-                            elli_machine_util:select_content_type(ContentTypesAccepted, 
-                                ContentTypeHeader),
+                        {SelectedContentType, S6} = 
+                            select_content_type(S5),
                         % item 81
                         if SelectedContentType =:= none -> 
                             % item 112
                             % Unsupported MediaType
                             respond(415, S6)
                         ; true ->
-                            % item 582
-                            {_, ProcessFun} = SelectedContentType,
                             % item 315
+                            {_, ProcessFun} = SelectedContentType,
                             {ProcessResult, S7} = call(ProcessFun, S6),
+                            S8 = encode_body_if_set(S7),
                             % item 325
                             if ProcessResult =:= true -> 
                                 % item 324
-                                S8 = encode_body_if_set(S7),
-                                % item 179
                                 finalize(S8)
                             ; true ->
                                 % item 323
@@ -1098,12 +1074,6 @@ post_flow(State) ->
                                 % Moved Temporarily
                                 respond(307, S7)
                             ; true ->
-                                % item 579
-                                if missing-post -> 
-                                    []
-                                ; true ->
-                                    []
-                                end,
                                 % item 125
                                 % Gone
                                 respond(410, S7)
@@ -1115,16 +1085,15 @@ post_flow(State) ->
                             call(allow_missing_post, S5),
                         % item 117
                         if AllowMissingPost -> 
-                            % item 337
-                            {ContentTypesAccepted, S7} = 
-                                call(content_types_accepted, S6),
+                            % item 589
+                            {SelectedContentType, S7} = 
+                                select_content_type(S6),
                             % item 126
-                            if ContentTypesAccepted =:= [] -> 
-                                % item 339
-                                {_ProcessResult, S8} = call(process_post, S7),
-                                % item 314
-                                Location = 
-                                    get_resp_header(<<"Location">>, S8),
+                            if SelectedContentType =:= none -> 
+                                % item 590
+                                {_, ProcessFun} = SelectedContentType,
+                                {ProcessResult, S8} = call(ProcessFun, S7),
+                                Location = get_resp_header(<<"Location">>, S8),
                                 % item 134
                                 if Location =/= undefined -> 
                                     % item 137
@@ -1183,6 +1152,14 @@ respond(Code, State) ->
     {Code, S1}
 .
 
+select_content_type(State) ->
+    % item 588
+    ContentTypeHeader = get_header(<<"Content-Type">>, State, <<"application/octet-stream">>),
+    {ContentTypesAccepted, S1} = call(content_types_accepted, State),
+    SelectedContentType = elli_machine_util:select_content_type(ContentTypesAccepted, ContentTypeHeader),
+    {SelectedContentType, S1}
+.
+
 set_exchange(Exchange, State) ->
     % item 553
     State#machine_flow_state{exchange=Exchange}
@@ -1220,7 +1197,6 @@ set_expires(_Expires, State) ->
     State.
 
 set_last_modified(_LastModified, State) ->
-    io:fwrite(standard_error, "TODOL set_last_modified~n", []),
     State.
 
 set_resp_header(Header, Value, #machine_flow_state{exchange=Ex}=S) ->

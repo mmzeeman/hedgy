@@ -45,8 +45,8 @@
 dispatch(Req, Args) ->
    DispatchList = proplists:get_value(dispatch_list, Args, []),
    Host = elli_machine_util:host(elli_request:headers(Req)),
-   ReqData = emr:make_reqdata(Host),
-   {dispatch(Host, Req, DispatchList), ReqData}.
+   Exchange = emx:make_exchange(Req),
+   {dispatch(Host, Req, DispatchList), Exchange}.
 
 %% @spec dispatch(Host::binary(), elli::req(),
 %%                DispatchList::[matchterm()]) ->

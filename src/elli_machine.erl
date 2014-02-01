@@ -72,11 +72,9 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
     case Dispatcher:dispatch(Req, DispatchArgs) of
         {{no_dispatch_match, _Host, _PathSpec}, ReqData} ->
             {no_dispatch_match, ReqData};
-        {{ControllerMod, ControllerOpts, 
-          _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, _ReqData} ->
+        {{ControllerMod, ControllerOpts, _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, Exchange} ->
             {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts),
-            #machine_flow_state{exchange=emx:make_exchange(Req), 
-                          controller_mod=ControllerMod, controller_state=ControllerState}
+            #machine_flow_state{exchange=Exchange, controller_mod=ControllerMod, controller_state=ControllerState}
     end.
 
 dispatcher(Args) ->
