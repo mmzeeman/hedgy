@@ -85,56 +85,32 @@ use_default(Fun, Mod) ->
             Default
     end.
 
-default(ping) ->
-    no_default;
-default(service_available) ->
-    true;
-default(resource_exists) ->
-    true;
-default(auth_required) ->
-    true;
-default(is_authorized) ->
-    true;
-default(forbidden) ->
-    false;
-default(upgrades_provided) ->
-    [];
-default(allow_missing_post) ->
-    false;
-default(malformed_request) ->
-    false;
-default(uri_too_long) ->
-    false;
-default(known_content_type) ->
-    true;
-default(valid_content_headers) ->
-    true;
-default(valid_entity_length) ->
-    true;
-default(options) ->
-    [];
-default(allowed_methods) ->
-    ['GET', 'HEAD'];
-default(known_methods) ->
+default(service_available) -> true;
+default(resource_exists) -> true;
+default(auth_required) -> true;
+default(is_authorized) -> true;
+default(forbidden) -> false;
+default(upgrades_provided) -> [];
+default(allow_missing_post) -> false;
+default(malformed_request) -> false;
+default(uri_too_long) -> false;
+default(known_content_type) -> true;
+default(valid_content_headers) -> true;
+default(valid_entity_length) -> true;
+default(options) -> [];
+default(allowed_methods) -> ['GET', 'HEAD'];
+default(known_methods) -> 
     ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'CONNECT', 'OPTIONS'];
-default(content_types_provided) ->
+default(content_types_provided) -> 
     [{<<"text/html">>, to_html}];
-default(content_types_accepted) ->
-    [];
-default(delete_resource) ->
-    false;
-default(delete_completed) ->
-    true;
-default(post_is_create) ->
-    false;
-default(create_path) ->
-    undefined;
-default(base_uri) ->
-    undefined;
-default(process_post) ->
-    no_default;
-default(language_available) ->
-    true;
+default(content_types_accepted) -> 
+    [{<<"*/*">>, process}]; 
+default(delete_resource) -> false;
+default(delete_completed) -> true;
+default(post_is_create) -> false;
+default(create_path) -> undefined;
+default(base_uri) -> undefined;
+default(language_available) -> true;
 
 % The default setting is needed for non-charset responses such as image/png
 % An example of how one might do actual negotiation:
@@ -153,26 +129,17 @@ default(content_encodings_provided) ->
 default(transfer_encodings_provided) ->
     [{<<"gzip">>, fun(X) -> zlib:gzip(X) end}];
 
-default(variances) ->
-    [];
-default(is_conflict) ->
-    false;
-default(multiple_choices) ->
-    false;
-default(previously_existed) ->
-    false;
-default(moved_permanently) ->
-    false;
-default(moved_temporarily) ->
-    false;
-default(last_modified) ->
-    undefined;
-default(expires) ->
-    undefined;
-default(generate_etag) ->
-    undefined;
-default(finish_request) ->
-    true;
+default(variances) -> [];
+default(is_conflict) -> false;
+default(multiple_choices) -> false;
+default(previously_existed) -> false;
+default(moved_permanently) -> false;
+default(moved_temporarily) -> false;
+default(last_modified) -> undefined;
+default(expires) -> undefined;
+default(generate_etag) -> undefined;
+default(finish_request) -> true;
+%% 
 default(_) ->
     no_default.
 

@@ -26,7 +26,9 @@
 -export([
     host/1,
 
-    choose_media_type/2,
+    select_media_type/2,
+    select_content_type/2,
+
     choose_charset/2,
     choose_encoding/2,
 
@@ -46,19 +48,55 @@ host(Headers) ->
         [H|_] -> H
     end.
 
+%% @doc Select the media type for this response.
+select_media_type(Provided, AcceptHeader) ->
+    ContentTypes = [normalize_provided1(Type) || {Type, _Fun} <- Provided],
+    case choose_media_type(ContentTypes, AcceptHeader) of
+        none -> none;
+        ChosenMediaType -> 
+            {ChosenMediaType, _Fun} = proplists:lookup(ChosenMediaType, Provided)
+    end.
+
+%% %doc Choose the content-type that will be used to accept an request.
+select_content_type(Provided, ContentTypeHeader) ->
+    % Return the content-type that will be used to accept the request.
+    ContentTypes = [normalize_provided1(Type) || {Type, _Fun} <- Provided],
+    ContentTypeDetail = media_type_to_detail(ContentTypeHeader),
+    
+    % Provided is a list of media types the controller can accept.
+    %  each is either a string e.g. -- <<"application/x-www-form-urlencoded">>
+    %   or a string and parameters e.g. -- {<<"x-www-form-urlencoded">>,[{level,1}]}
+    % (the plain string case with no parameters is much more common)
+    case choose_content_type(ContentTypeDetail, ContentTypes) of
+        none -> none;
+        MediaType ->
+            {MediaType, _Fun} = proplists:lookup(MediaType, Provided)
+    end.
+
 %% @doc Choose media type
--spec choose_media_type(Provided :: binary(), AcceptHeader :: binary()) -> binary().
 choose_media_type(Provided, AcceptHead) ->
     % Return the Content-Type we will serve for a request.
     % If there is no acceptable/available match, return the atom "none".
     % AcceptHead is the value of the request's Accept header
+
     % Provided is a list of media types the controller can provide.
-    %  each is either a string e.g. -- "text/html"
-    %   or a string and parameters e.g. -- {"text/html",[{level,1}]}
+    %  each is either a string e.g. -- <<"text/html">>
+    %   or a string and parameters e.g. -- {<<"text/html">>,[{level,1}]}
     % (the plain string case with no parameters is much more common)
     Requested = accept_header_to_media_types(AcceptHead),
-    Prov1 = normalize_provided(Provided),
-    choose_media_type1(Prov1, Requested).
+    %% Prov1 = normalize_provided(Provided),
+    choose_media_type1(Provided, Requested).
+
+
+%% Choose media type to accept an incoming request.
+choose_content_type(_, []) ->
+    none;
+choose_content_type({MediaType, _Params}=ContentType, [ {MediaTypeHead, _ParamsHead}=O | T]) ->
+    case media_type_match(MediaTypeHead, MediaType) of
+        false -> choose_content_type(ContentType, T);
+        true -> MediaTypeHead
+    end.
+
 
 % @doc Select a charset.
 choose_charset(no_charset, _) ->
@@ -122,31 +160,29 @@ choose_media_type1(Provided, [H|T]) ->
         [{CT_T,CT_P}|_] -> format_content_type(CT_T,CT_P)
     end.
 
-media_match(_,[]) -> [];
-media_match({<<"*/*">>, []}, [H|_]) -> [H];
+media_match(_, []) -> 
+    [];
+media_match({<<"*/*">>, []}, [H|_]) -> 
+    [H];
 media_match({Type, Params}, Provided) ->
-    [{T1,P1} || {T1,P1} <- Provided,
-                media_type_match(Type, T1), media_params_match(Params, P1)].
+    [{T1,P1} || {T1,P1} <- Provided, media_type_match(Type, T1), media_params_match(Params, P1)].
+
+
+media_type_match(<<"*">>, _Prov) -> true;
+media_type_match(<<"*/*">>, _Prov) -> true;
+media_type_match(Req, Req) -> true;
 media_type_match(Req, Prov) ->
-    case Req of
-        <<"*">> -> % might as well not break for lame (Gomez) clients
-            true;
-        <<"*/*">> ->
-            true;
-        Prov ->
-            true;
-        _ ->
-            [R1|R2] = binary:split(Req, <<"/">>, [global]),
-            [P1,_P2] = binary:split(Prov, <<"/">>, [global]),
-            case R2 of
-                [<<"*">>] ->
-                    case R1 of
-                        P1 -> true;
-                        _ -> false
-                    end;
+    [R1 | R2] = binary:split(Req, <<"/">>, [global]),
+    [P1, _P2] = binary:split(Prov, <<"/">>, [global]),
+    case R2 of
+        [<<"*">>] ->
+            case R1 of
+                P1 -> true;
                 _ -> false
-            end
+            end;
+        _ -> false
     end.
+
 media_params_match(Req, Prov) ->
     lists:sort(Req) =:= lists:sort(Prov).
 
@@ -193,6 +229,7 @@ accept_header_to_media_types(HeadVal) ->
 
 normalize_provided(Provided) ->
     [normalize_provided1(X) || X <- Provided].
+
 normalize_provided1(Type) when is_binary(Type) -> 
     {Type, []};
 normalize_provided1({Type,Params}) -> 
@@ -389,7 +426,7 @@ host_test() ->
     ?assertEqual(<<"example.com">>, host([{<<"X-Forwarded-Host">>, <<"example.com">>}])),
     ?assertEqual(<<"example.com">>, host([{<<"X-Forwarded-Server">>, <<"example.com">>}])),
 
-    ?assertEqual(<<"example.com">>, host([{<<"Content_Length">>, <<"100">>}, {<<"Host">>, <<"example.com">>}])),
+    ?assertEqual(<<"example.com">>, host([{<<"Content-Length">>, <<"100">>}, {<<"Host">>, <<"example.com">>}])),
     ?assertEqual(<<"example.com">>, host([{<<"X-Forwarded-Host">>, <<"example.com">>}])),
     ?assertEqual(<<"example.com">>, host([{<<"X-Forwarded-Server">>, <<"example.com">>}])),
 
@@ -458,15 +495,15 @@ accept_header_to_media_types_test() ->
     ok.
 
 choose_media_type_test() ->
-    Provided = <<"text/html">>,
+    Provided = {<<"text/html">>, []},
     ShouldMatch = [<<"*">>, <<"*/*">>, <<"text/*">>, <<"text/html">>],
     WantNone = [<<"foo">>, <<"text/xml">>, <<"application/*">>, <<"foo/bar/baz">>],
-    [?assertEqual(Provided, choose_media_type([Provided], I)) || I <- ShouldMatch ],
+    [?assertEqual(<<"text/html">>, choose_media_type([Provided], I)) || I <- ShouldMatch ],
     [?assertEqual(none, choose_media_type([Provided], I)) || I <- WantNone ],
     ok.
 
 choose_media_type_qval_test() ->
-    Provided = [<<"text/html">>, <<"image/jpeg">>],
+    Provided = [{<<"text/html">>, []}, {<<"image/jpeg">>, []}],
     HtmlMatch = [<<"image/jpeg;q=0.5, text/html">>,
                  <<"text/html, image/jpeg; q=0.5">>,
                  <<"text/*; q=0.8, image/*;q=0.7">>,
@@ -484,6 +521,18 @@ choose_encoding_test() ->
 
 rfc1123_date_test() ->
     ?assertEqual(<<"Sun, 08 Nov 1970 08:00:00 GMT">>, rfc1123_date({{1970,11,8}, {8,0,0}})),
+    ok.
+
+
+select_content_type_test() ->
+    ContentType = <<"application/x-www-form-urlencoded; charset=UTF-8">>,
+    Provided = [{<<"*/*">>, accept_all}],
+
+    %% 
+    ?assertEqual({<<"*/*">>, accept_all}, 
+        select_content_type([{<<"*/*">>, accept_all}], ContentType)),
+
+
     ok.
 
 

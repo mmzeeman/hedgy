@@ -78,20 +78,18 @@ accept_content_type(State) ->
         {true, ContentTypesProvided, S2}
     ; true ->
         % item 439
-        ContentTypes = [Type || {Type, _Fun} <- ContentTypesProvided],
         ChosenMediaType = 
-            elli_machine_util:choose_media_type(ContentTypes, AcceptHeader),
+            elli_machine_util:select_media_type(ContentTypesProvided, AcceptHeader),
         % item 440
         if ChosenMediaType =:= none -> 
             % item 446
             {false, [], S1}
         ; true ->
             % item 535
-            {ChosenMediaType, Fun} = 
-                proplists:lookup(ChosenMediaType, ContentTypesProvided),
+            {MediaType, Fun} = ChosenMediaType,
             
             S2 = with_exchange(fun(Ex) ->
-                    Ex1 = emx:set_resp_content_type(ChosenMediaType, Ex),
+                    Ex1 = emx:set_resp_content_type(MediaType, Ex),
                     emx:set_resp_content_fun(Fun, Ex1) 
                  end, S1),
             
@@ -960,16 +958,24 @@ post_flow(State) ->
                         % item 75
                         if IfModifiedSince =:= undefined -> 
                             % item 312
-                            {ContentTypesAccepted, S6} = 
-                                call(content_types_accepted, S5),
+                            
+                            ContentTypeHeader =
+                                elli_request:get_header(
+                            	<<"Content-Type">>, Req, <<"application/octet-stream">>),
+                            {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
+                            SelectedContentType = 
+                                elli_machine_util:select_content_type(ContentTypesAccepted, 
+                                    ContentTypeHeader),
                             % item 81
-                            if ContentTypesAccepted =:= [] -> 
+                            if SelectedContentType =:= none -> 
                                 % item 112
                                 % Unsupported MediaType
                                 respond(415, S6)
                             ; true ->
+                                % item 582
+                                {_, ProcessFun} = SelectedContentType,
                                 % item 315
-                                {ProcessResult, S7} = call(process_post, S6),
+                                {ProcessResult, S7} = call(ProcessFun, S6),
                                 % item 325
                                 if ProcessResult =:= true -> 
                                     % item 324
@@ -989,16 +995,24 @@ post_flow(State) ->
                             % item 181
                             if LastModified > IfModifiedSince -> 
                                 % item 312
-                                {ContentTypesAccepted, S6} = 
-                                    call(content_types_accepted, S5),
+                                
+                                ContentTypeHeader =
+                                    elli_request:get_header(
+                                	<<"Content-Type">>, Req, <<"application/octet-stream">>),
+                                {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
+                                SelectedContentType = 
+                                    elli_machine_util:select_content_type(ContentTypesAccepted, 
+                                        ContentTypeHeader),
                                 % item 81
-                                if ContentTypesAccepted =:= [] -> 
+                                if SelectedContentType =:= none -> 
                                     % item 112
                                     % Unsupported MediaType
                                     respond(415, S6)
                                 ; true ->
+                                    % item 582
+                                    {_, ProcessFun} = SelectedContentType,
                                     % item 315
-                                    {ProcessResult, S7} = call(process_post, S6),
+                                    {ProcessResult, S7} = call(ProcessFun, S6),
                                     % item 325
                                     if ProcessResult =:= true -> 
                                         % item 324
@@ -1026,16 +1040,24 @@ post_flow(State) ->
                         end
                     ; true ->
                         % item 312
-                        {ContentTypesAccepted, S6} = 
-                            call(content_types_accepted, S5),
+                        
+                        ContentTypeHeader =
+                            elli_request:get_header(
+                        	<<"Content-Type">>, Req, <<"application/octet-stream">>),
+                        {ContentTypesAccepted, S6} = call(content_types_accepted, S5),
+                        SelectedContentType = 
+                            elli_machine_util:select_content_type(ContentTypesAccepted, 
+                                ContentTypeHeader),
                         % item 81
-                        if ContentTypesAccepted =:= [] -> 
+                        if SelectedContentType =:= none -> 
                             % item 112
                             % Unsupported MediaType
                             respond(415, S6)
                         ; true ->
+                            % item 582
+                            {_, ProcessFun} = SelectedContentType,
                             % item 315
-                            {ProcessResult, S7} = call(process_post, S6),
+                            {ProcessResult, S7} = call(ProcessFun, S6),
                             % item 325
                             if ProcessResult =:= true -> 
                                 % item 324
@@ -1074,8 +1096,14 @@ post_flow(State) ->
                             if MovedTemporarily -> 
                                 % item 124
                                 % Moved Temporarily
-                                respond(410, S7)
+                                respond(307, S7)
                             ; true ->
+                                % item 579
+                                if missing-post -> 
+                                    []
+                                ; true ->
+                                    []
+                                end,
                                 % item 125
                                 % Gone
                                 respond(410, S7)

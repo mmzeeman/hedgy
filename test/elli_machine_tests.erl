@@ -29,25 +29,23 @@ not_found_test() ->
     ok.
 
 post_test() ->
-	Config = config(),
-    ?assertEqual({200, [{<<"Content-Encoding">>,<<"identity">>},
-                        {<<"Content-Type">>,<<"text/html">>}], <<>>},
-                 elli_test:call('POST', <<"/post">>, 
-                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
-    ok.
+ 	Config = config(),
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}], 
+            <<"<html><head></head><body>thank-you</body></html>">>},
+        elli_test:call('POST', <<"/post">>, [{<<"Host">>, <<"example.com">>}], <<"x=y;">>, Config)),
+     ok.
 
-ws_test() ->
-    Config = config(),
-    ?assertEqual({200, [{<<"Content-Encoding">>,<<"identity">>},
-        {<<"Content-Type">>,<<"text/html">>}], <<"No websocket headers">>},
-        elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+% ws_test() ->
+%     Config = config(),
+%     ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}], <<"No websocket headers">>},
+%         elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
 
-    ?assertEqual({101, [], <<>>},
-        elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}, 
-            {<<"Upgrade">>, <<"websocket">>}, 
-            {<<"Connection">>, <<"upgrade">>}], <<>>, Config)),
+%     ?assertEqual({101, [], <<>>},
+%         elli_test:call('GET', <<"/ws">>, [{<<"Host">>, <<"example.com">>}, 
+%             {<<"Upgrade">>, <<"websocket">>}, 
+%             {<<"Connection">>, <<"upgrade">>}], <<>>, Config)),
     
-    ok.
+%     ok.
 
 
 get_test() ->

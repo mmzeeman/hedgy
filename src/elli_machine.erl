@@ -53,7 +53,6 @@ handle({no_dispatch_match, _ReqData}, _Args) ->
 handle(FlowState, _Args) ->
     case elli_machine_flow:handle_request(FlowState) of
         {Code, FlowFin} ->
-            io:fwrite(standard_error, "received: ~p~n~n", [Code]),
             emx:response(FlowFin#machine_flow_state.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
@@ -127,13 +126,13 @@ hello_world_test() ->
 
     ok.
 
-head_test() ->
-    %% Note: elli removes the body.
-    Config = config(),
-    ?assertEqual({200, [{<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
-                 elli_test:call('HEAD', <<"/hello">>, 
-                    [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
-    ok.
+% head_test() ->
+%     %% Note: elli removes the body.
+%     Config = config(),
+%     ?assertEqual({200, [{<<"Content-Type">>, <<"text/html">>}], <<"Hello, new world">>},
+%                  elli_test:call('HEAD', <<"/hello">>, 
+%                     [{<<"Host">>, <<"example.com">>}], <<>>, Config)),
+%     ok.
 
 four_o_five_test() ->
     Config = config(),
