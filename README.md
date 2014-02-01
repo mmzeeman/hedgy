@@ -13,7 +13,7 @@ Elli Machine is a webmachine implementation on top of the Elli webserver. The ma
 Controllers are modules with a set of functions which you can use to define the behaviour of your web service. Elli Machine takes care of the protocol handling. Controllers are similar to webmachine resources.
 
 ```erlang
-init(Request, Args) -> {ok, Context} 
+init(Exchange, Args) -> {ok, Context} 
 ```
 
 All controllers should define and export init/2, which will receive a configuration property list from the dispatcher as its argument. This function should, if successful, return {ok, Context}. Context is any term, and will be threaded through all of
@@ -27,7 +27,7 @@ All controllers should define and export handle_event/3, which will
 receive events from the http decision core. This can be used during debugging or collection of statistics.
 
 ```erlang
-render_error(Code, Error, ReqData, Context) -> {Html, ReqData, Context}
+render_error(Code, Error, Exchange, Context) -> {Html, Exchange, Context}
 ```
 
 When Elli Machine encounters an error during processing of a request and a controller exports this function it will be used to render a html error message.
@@ -53,14 +53,14 @@ than threading it through the various functions of your resource. This
 is the means by which transient application-specific request state is
 passed along between functions.
 
-### ReqData
+### Exchange
 
-ReqData is a #machine_reqdata{} term, and is manipulated via 
-the emr interface. A controller function may access request data 
+Exchange is a #machine_exchange{} term, and is manipulated via 
+the emx interface. A controller function may access request data 
 (such as header values) from the input value. If a resource function 
 wishes to affect the response data in some way other than that implied 
 by its return value (e.g. adding an X-Header) then it should modify 
-the returned ReqData term accordingly.
+the returned Exchange term accordingly.
 
 ### Resource Functions
 
@@ -83,7 +83,6 @@ its return value should be evident from examining the [[Diagram]].
 | `forbidden` | `false` | |
 | `upgrades_provided` | `[]` | |
 | `allow_missing_post` | `false` | |
-| `validate_content_md5` | `not_validated` | Validate the content-md5 header, when `not_validated` is returend elli_machine will check the content hash. When `false` is returned, `400 Bad Request` is sent back to the client, when something else is returned processing will continue. |
 | `malformed_request` | `false` | |
 | `uri_too_long` | `false` | |
 | `known_content_type` | `true` | |
@@ -93,13 +92,12 @@ its return value should be evident from examining the [[Diagram]].
 | `allowed_methods` | `[` `'GET'` , `'HEAD'` `]` | |
 | `known_methods` | `[` `'GET'`, `'HEAD'`, `'POST'`, `'PUT'`, `'DELETE'`, `'TRACE'`, `'CONNECT'`, `'OPTIONS'` `]` | |
 | `content_types_provided` | `[` `{` `<<"text/html">>`, `to_html` `}` `]` | |
-| `content_types_accepted` | `[]` | |
+| `content_types_accepted` | `[{<<"*/*">>, process}]` | |
 | `delete_resource` | `false` | |
 | `delete_completed` | `true` | |
 | `post_is_create` | `false` | |
 | `create_path` | `undefined` | |
 | `base_uri` | `undefined` | |
-| `process_post` | `no_default` | Returns `true` when the post is handled. It is also possible to return {redirect, path} then the post is handled and a `303 See Other` response is returned to the client. |
 | `language_available` | `true` | |
 | `charsets_provided` | `no_charset` | |
 | `encodings_provided` | `[` `{` `<<"identity">>`, `fun(X) -> X end` `}` `]` | |
