@@ -78,7 +78,6 @@ its return value should be evident from examining the [[Diagram]].
 | `ping` | | Called at the start of handling a request, should return `pong`. Otherwise `503 Service Unavailable` will be returned to the client |
 | `service_available` | `true` | Returns `503 Service Unvailable` when `false` is returned. |
 | `resource_exists` | `true` | |
-| `auth_required` | `true` | |
 | `is_authorized` | `true` | |
 | `forbidden` | `false` | |
 | `upgrades_provided` | `[]` | |
