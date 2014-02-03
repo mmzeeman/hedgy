@@ -52,7 +52,7 @@ handle({no_dispatch_match, _ReqData}, _Args) ->
     ignore; 
 handle(FlowState, _Args) ->
     case elli_machine_flow:handle_request(FlowState) of
-        {Code, FlowFin} ->
+        {_, FlowFin} ->
             emx:response(FlowFin#machine_flow_state.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
