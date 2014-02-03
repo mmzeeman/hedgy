@@ -29,7 +29,7 @@ process_request(X, Context) ->
 
 %% 
 %%
-render_error(Code, Error, ReqData, Context) ->
+render_error(Code, _Error, ReqData, Context) ->
 	{<<"Error">>, ReqData, Context}.
 
 %%

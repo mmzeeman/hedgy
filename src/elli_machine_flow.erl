@@ -14,23 +14,23 @@
 
 
 accept_charset(State) ->
-    % item 517
+    % item 887
     CheckCharset = get_header(<<"Accept-Charset">>, State, <<"*">>),
     {CharsetsAvailable, S1} = call(charsets_provided, State),
-    % item 562
+    % item 892
     case CharsetsAvailable =:= no_charset of true -> 
-        % item 565
+        % item 895
         {true, [], S1}
     ; false ->
-        % item 564
+        % item 894
         ChosenCharset = 
             elli_machine_util:choose_charset(CharsetsAvailable, CheckCharset),
-        % item 524
+        % item 888
         case ChosenCharset =:= none of true -> 
-            % item 527
+            % item 890
             {false, [], S1}
         ; false ->
-            % item 534
+            % item 891
             S2 = set_resp_chosen_charset(ChosenCharset, S1),
             {true, CharsetsAvailable, S2}
         end
@@ -38,18 +38,18 @@ accept_charset(State) ->
 .
 
 accept_content_encoding(State) ->
-    % item 537
+    % item 961
     CheckEncoding = get_header(<<"Accept-Encoding">>, 
         State, <<"identity;q=1.0,*;q=0.5">>),
     {EncodingsProvided, S1} = call(content_encodings_provided, State),
     ChosenContentEncoding = 
         elli_machine_util:choose_encoding(EncodingsProvided, CheckEncoding),
-    % item 538
+    % item 962
     case ChosenContentEncoding =:= none of true -> 
-        % item 541
+        % item 965
         {false, [], State}
     ; false ->
-        % item 574
+        % item 966
         S2 = case ChosenContentEncoding of
             <<"identity">> -> 
                 S1;
@@ -58,18 +58,18 @@ accept_content_encoding(State) ->
                     ChosenContentEncoding, exchange(S1)), 
                 set_exchange(Ex1, S1)
         end,
-        % item 515
+        % item 960
         {true, EncodingsProvided, S2}
     end
 .
 
 accept_content_type(State) ->
-    % item 435
+    % item 902
     {ContentTypesProvided, S1} = call(content_types_provided, State),
     AcceptHeader = get_header(<<"Accept">>, State, undefined),
-    % item 436
+    % item 903
     case AcceptHeader =:= undefined of true -> 
-        % item 500
+        % item 910
         {Ct, Cf} = hd(ContentTypesProvided),
         S2 = with_exchange(fun(Ex) ->
                 Ex1 = emx:set_resp_content_type(Ct, Ex),
@@ -77,15 +77,15 @@ accept_content_type(State) ->
              end, S1),
         {true, ContentTypesProvided, S2}
     ; false ->
-        % item 439
+        % item 905
         ChosenMediaType = 
             elli_machine_util:select_media_type(ContentTypesProvided, AcceptHeader),
-        % item 440
+        % item 906
         case ChosenMediaType =:= none of true -> 
-            % item 446
+            % item 909
             {false, [], S1}
         ; false ->
-            % item 535
+            % item 911
             {MediaType, Fun} = ChosenMediaType,
             
             S2 = with_exchange(fun(Ex) ->
@@ -99,23 +99,23 @@ accept_content_type(State) ->
 .
 
 accept_language(State) ->
-    % item 459
+    % item 917
     Req = request(State),
     AcceptLanguageHeader = 
     	elli_request:get_header(<<"Accept-Language">>, Req),
-    % item 460
+    % item 918
     case AcceptLanguageHeader =:= undefined of true -> 
-        % item 465
+        % item 923
         {true, State}
     ; false ->
-        % item 462
+        % item 920
         {LanguageAvailable, S1} = call(language_available, State),
-        % item 463
+        % item 921
         case LanguageAvailable of true -> 
-            % item 466
+            % item 924
             {true, S1}
         ; false ->
-            % item 467
+            % item 925
             {false, S1}
         end
     end
@@ -137,25 +137,25 @@ call(Name, State) ->
 .
 
 content_negotiation(State) ->
-    % item 478
+    % item 932
     {ContentTypeAccepted, ContentTypesAvailable, S1} =
          accept_content_type(State),
-    % item 479
+    % item 933
     case ContentTypeAccepted of true -> 
-        % item 484
+        % item 938
         {LanguageAccepted, S2} = accept_language(S1),
-        % item 485
+        % item 939
         case LanguageAccepted of true -> 
-            % item 491
+            % item 942
             {CharsetAccepted, CharsetsAvailable, S3} = accept_charset(S2),
-            % item 492
+            % item 943
             case CharsetAccepted of true -> 
-                % item 495
+                % item 946
                 {ContentEncodingAccepted, ContentEncodingsAvailable, S4} = 
                     accept_content_encoding(S3),
-                % item 497
+                % item 947
                 case ContentEncodingAccepted of true -> 
-                    % item 536
+                    % item 950
                     %% Set Content-Type header
                     S5 = with_exchange(fun(Exchange) ->
                             CType = emx:get_resp_content_type(Exchange),
@@ -166,42 +166,42 @@ content_negotiation(State) ->
                             emx:set_resp_header(<<"Content-Type">>, 
                             <<CType/binary, CSet/binary>>, Exchange) 
                          end, S4),
-                    % item 561
+                    % item 951
                     V1 = add_variance(ContentTypesAvailable, <<"Accept">>, []),
                     V2 = add_variance(CharsetsAvailable, <<"Accept-Charset">>, V1),
                     V3 = add_variance(ContentEncodingsAvailable, <<"Accept-Encoding">>, V2),
                     {ControllerVariances, S6} = call(variances, S5),
                     Variances = ControllerVariances ++ V3,
-                    % item 575
+                    % item 952
                     case Variances =:= [] of true -> 
-                        % item 578
+                        % item 954
                         {true, S6}
                     ; false ->
-                        % item 483
+                        % item 937
                         S7 = set_resp_header(<<"Vary">>, 
                             elli_machine_util:binary_join(Variances, <<", ">>), S6),
                         {true, S7}
                     end
                 ; false ->
-                    % item 499
+                    % item 949
                     {false, S4}
                 end
             ; false ->
-                % item 494
+                % item 945
                 {false, S3}
             end
         ; false ->
-            % item 488
+            % item 941
             {false, S2}
         end
     ; false ->
-        % item 482
+        % item 936
         {false, S1}
     end
 .
 
 delete_flow(State) ->
-    % item 377
+    % item 972
     State
 .
 
@@ -374,541 +374,546 @@ finalize(State) ->
 .
 
 get_flow(State) ->
-    % item 194
+    % item 772
     Req = request(State),
     {ResourceExists, S1} = call(resource_exists, State),
-    % item 6
+    % item 747
     case ResourceExists of true -> 
-        % item 301
+        % item 778
         {ETag, S2} = call(generate_etag, S1),
         IfMatchHeader = 
             elli_request:get_header(<<"If-Match">>, Req),
-        % item 23
+        % item 750
         case IfMatchHeader =:= undefined of true -> 
-            % item 290
+            % item 775
             {LastModified, S3} = call(last_modified, S2),
-            % item 302
+            % item 779
             case LastModified =:= undefined of true -> 
-                % item 284
+                % item 773
                 {Expires, S4} = call(expires, S3),
                 S5 = set_etag(ETag, S4),
                 S6 = set_expires(Expires, S5),
-                % item 304
+                % item 781
                 IfNoneMatch = 
                     elli_request:get_header(<<"If-None-Match">>, Req),
-                % item 36
+                % item 762
                 case IfNoneMatch =:= undefined of true -> 
-                    % item 39
+                    % item 765
                     case IfNoneMatch =:= <<"*">> of true -> 
-                        % item 44
+                        % item 767
                         % Not Modified
                         error(304, S6)
                     ; false ->
-                        % item 298
+                        % item 777
                         ETagMatches = 
                             match_etag(ETag, IfMatchHeader),
-                        % item 45
+                        % item 768
                         case ETagMatches of true -> 
-                            % item 44
+                            % item 767
                             % Not Modified
                             error(304, S6)
                         ; false ->
-                            % item 46
+                            % item 769
                             S7 = set_last_modified(LastModified, S6),
                             
                             Ex = exchange(S7),
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
-                            % item 187
+                            % item 771
                             finalize(S9)
                         end
                     end
                 ; false ->
-                    % item 46
+                    % item 769
                     S7 = set_last_modified(LastModified, S6),
                     
                     Ex = exchange(S7),
                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                     Ex1 = emx:set_resp_body(Response, Ex),
                     S9 = set_exchange(Ex1, S8),
-                    % item 187
+                    % item 771
                     finalize(S9)
                 end
             ; false ->
-                % item 289
+                % item 774
                 IfModifiedSince =
                     elli_request:get_header(<<"If-Modified-Since">>, Req),
-                % item 33
+                % item 759
                 case IfModifiedSince =:= undefined of true -> 
-                    % item 284
+                    % item 773
                     {Expires, S4} = call(expires, S3),
                     S5 = set_etag(ETag, S4),
                     S6 = set_expires(Expires, S5),
-                    % item 304
+                    % item 781
                     IfNoneMatch = 
                         elli_request:get_header(<<"If-None-Match">>, Req),
-                    % item 36
+                    % item 762
                     case IfNoneMatch =:= undefined of true -> 
-                        % item 39
+                        % item 765
                         case IfNoneMatch =:= <<"*">> of true -> 
-                            % item 44
+                            % item 767
                             % Not Modified
                             error(304, S6)
                         ; false ->
-                            % item 298
+                            % item 777
                             ETagMatches = 
                                 match_etag(ETag, IfMatchHeader),
-                            % item 45
+                            % item 768
                             case ETagMatches of true -> 
-                                % item 44
+                                % item 767
                                 % Not Modified
                                 error(304, S6)
                             ; false ->
-                                % item 46
+                                % item 769
                                 S7 = set_last_modified(LastModified, S6),
                                 
                                 Ex = exchange(S7),
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
-                                % item 187
+                                % item 771
                                 finalize(S9)
                             end
                         end
                     ; false ->
-                        % item 46
+                        % item 769
                         S7 = set_last_modified(LastModified, S6),
                         
                         Ex = exchange(S7),
                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                         Ex1 = emx:set_resp_body(Response, Ex),
                         S9 = set_exchange(Ex1, S8),
-                        % item 187
+                        % item 771
                         finalize(S9)
                     end
                 ; false ->
-                    % item 57
+                    % item 770
                     case LastModified > IfModifiedSince of true -> 
-                        % item 371
+                        % item 783
                         % Precondition Failed
                         error(412, S3)
                     ; false ->
-                        % item 284
+                        % item 773
                         {Expires, S4} = call(expires, S3),
                         S5 = set_etag(ETag, S4),
                         S6 = set_expires(Expires, S5),
-                        % item 304
+                        % item 781
                         IfNoneMatch = 
                             elli_request:get_header(<<"If-None-Match">>, Req),
-                        % item 36
+                        % item 762
                         case IfNoneMatch =:= undefined of true -> 
-                            % item 39
+                            % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
-                                % item 44
+                                % item 767
                                 % Not Modified
                                 error(304, S6)
                             ; false ->
-                                % item 298
+                                % item 777
                                 ETagMatches = 
                                     match_etag(ETag, IfMatchHeader),
-                                % item 45
+                                % item 768
                                 case ETagMatches of true -> 
-                                    % item 44
+                                    % item 767
                                     % Not Modified
                                     error(304, S6)
                                 ; false ->
-                                    % item 46
+                                    % item 769
                                     S7 = set_last_modified(LastModified, S6),
                                     
                                     Ex = exchange(S7),
                                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                     Ex1 = emx:set_resp_body(Response, Ex),
                                     S9 = set_exchange(Ex1, S8),
-                                    % item 187
+                                    % item 771
                                     finalize(S9)
                                 end
                             end
                         ; false ->
-                            % item 46
+                            % item 769
                             S7 = set_last_modified(LastModified, S6),
                             
                             Ex = exchange(S7),
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
-                            % item 187
+                            % item 771
                             finalize(S9)
                         end
                     end
                 end
             end
         ; false ->
-            % item 26
+            % item 753
             case IfMatchHeader =:= <<"*">> of true -> 
-                % item 290
+                % item 775
                 {LastModified, S3} = call(last_modified, S2),
-                % item 302
+                % item 779
                 case LastModified =:= undefined of true -> 
-                    % item 284
+                    % item 773
                     {Expires, S4} = call(expires, S3),
                     S5 = set_etag(ETag, S4),
                     S6 = set_expires(Expires, S5),
-                    % item 304
+                    % item 781
                     IfNoneMatch = 
                         elli_request:get_header(<<"If-None-Match">>, Req),
-                    % item 36
+                    % item 762
                     case IfNoneMatch =:= undefined of true -> 
-                        % item 39
+                        % item 765
                         case IfNoneMatch =:= <<"*">> of true -> 
-                            % item 44
+                            % item 767
                             % Not Modified
                             error(304, S6)
                         ; false ->
-                            % item 298
+                            % item 777
                             ETagMatches = 
                                 match_etag(ETag, IfMatchHeader),
-                            % item 45
+                            % item 768
                             case ETagMatches of true -> 
-                                % item 44
+                                % item 767
                                 % Not Modified
                                 error(304, S6)
                             ; false ->
-                                % item 46
+                                % item 769
                                 S7 = set_last_modified(LastModified, S6),
                                 
                                 Ex = exchange(S7),
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
-                                % item 187
+                                % item 771
                                 finalize(S9)
                             end
                         end
                     ; false ->
-                        % item 46
+                        % item 769
                         S7 = set_last_modified(LastModified, S6),
                         
                         Ex = exchange(S7),
                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                         Ex1 = emx:set_resp_body(Response, Ex),
                         S9 = set_exchange(Ex1, S8),
-                        % item 187
+                        % item 771
                         finalize(S9)
                     end
                 ; false ->
-                    % item 289
+                    % item 774
                     IfModifiedSince =
                         elli_request:get_header(<<"If-Modified-Since">>, Req),
-                    % item 33
+                    % item 759
                     case IfModifiedSince =:= undefined of true -> 
-                        % item 284
+                        % item 773
                         {Expires, S4} = call(expires, S3),
                         S5 = set_etag(ETag, S4),
                         S6 = set_expires(Expires, S5),
-                        % item 304
+                        % item 781
                         IfNoneMatch = 
                             elli_request:get_header(<<"If-None-Match">>, Req),
-                        % item 36
+                        % item 762
                         case IfNoneMatch =:= undefined of true -> 
-                            % item 39
+                            % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
-                                % item 44
+                                % item 767
                                 % Not Modified
                                 error(304, S6)
                             ; false ->
-                                % item 298
+                                % item 777
                                 ETagMatches = 
                                     match_etag(ETag, IfMatchHeader),
-                                % item 45
+                                % item 768
                                 case ETagMatches of true -> 
-                                    % item 44
+                                    % item 767
                                     % Not Modified
                                     error(304, S6)
                                 ; false ->
-                                    % item 46
+                                    % item 769
                                     S7 = set_last_modified(LastModified, S6),
                                     
                                     Ex = exchange(S7),
                                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                     Ex1 = emx:set_resp_body(Response, Ex),
                                     S9 = set_exchange(Ex1, S8),
-                                    % item 187
+                                    % item 771
                                     finalize(S9)
                                 end
                             end
                         ; false ->
-                            % item 46
+                            % item 769
                             S7 = set_last_modified(LastModified, S6),
                             
                             Ex = exchange(S7),
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
-                            % item 187
+                            % item 771
                             finalize(S9)
                         end
                     ; false ->
-                        % item 57
+                        % item 770
                         case LastModified > IfModifiedSince of true -> 
-                            % item 371
+                            % item 783
                             % Precondition Failed
                             error(412, S3)
                         ; false ->
-                            % item 284
+                            % item 773
                             {Expires, S4} = call(expires, S3),
                             S5 = set_etag(ETag, S4),
                             S6 = set_expires(Expires, S5),
-                            % item 304
+                            % item 781
                             IfNoneMatch = 
                                 elli_request:get_header(<<"If-None-Match">>, Req),
-                            % item 36
+                            % item 762
                             case IfNoneMatch =:= undefined of true -> 
-                                % item 39
+                                % item 765
                                 case IfNoneMatch =:= <<"*">> of true -> 
-                                    % item 44
+                                    % item 767
                                     % Not Modified
                                     error(304, S6)
                                 ; false ->
-                                    % item 298
+                                    % item 777
                                     ETagMatches = 
                                         match_etag(ETag, IfMatchHeader),
-                                    % item 45
+                                    % item 768
                                     case ETagMatches of true -> 
-                                        % item 44
+                                        % item 767
                                         % Not Modified
                                         error(304, S6)
                                     ; false ->
-                                        % item 46
+                                        % item 769
                                         S7 = set_last_modified(LastModified, S6),
                                         
                                         Ex = exchange(S7),
                                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                         Ex1 = emx:set_resp_body(Response, Ex),
                                         S9 = set_exchange(Ex1, S8),
-                                        % item 187
+                                        % item 771
                                         finalize(S9)
                                     end
                                 end
                             ; false ->
-                                % item 46
+                                % item 769
                                 S7 = set_last_modified(LastModified, S6),
                                 
                                 Ex = exchange(S7),
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
-                                % item 187
+                                % item 771
                                 finalize(S9)
                             end
                         end
                     end
                 end
             ; false ->
-                % item 291
+                % item 776
                 ETagMatches = 
                     match_etag(ETag, IfMatchHeader),
-                % item 29
+                % item 756
                 case ETagMatches of true -> 
-                    % item 290
+                    % item 775
                     {LastModified, S3} = call(last_modified, S2),
-                    % item 302
+                    % item 779
                     case LastModified =:= undefined of true -> 
-                        % item 284
+                        % item 773
                         {Expires, S4} = call(expires, S3),
                         S5 = set_etag(ETag, S4),
                         S6 = set_expires(Expires, S5),
-                        % item 304
+                        % item 781
                         IfNoneMatch = 
                             elli_request:get_header(<<"If-None-Match">>, Req),
-                        % item 36
+                        % item 762
                         case IfNoneMatch =:= undefined of true -> 
-                            % item 39
+                            % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
-                                % item 44
+                                % item 767
                                 % Not Modified
                                 error(304, S6)
                             ; false ->
-                                % item 298
+                                % item 777
                                 ETagMatches = 
                                     match_etag(ETag, IfMatchHeader),
-                                % item 45
+                                % item 768
                                 case ETagMatches of true -> 
-                                    % item 44
+                                    % item 767
                                     % Not Modified
                                     error(304, S6)
                                 ; false ->
-                                    % item 46
+                                    % item 769
                                     S7 = set_last_modified(LastModified, S6),
                                     
                                     Ex = exchange(S7),
                                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                     Ex1 = emx:set_resp_body(Response, Ex),
                                     S9 = set_exchange(Ex1, S8),
-                                    % item 187
+                                    % item 771
                                     finalize(S9)
                                 end
                             end
                         ; false ->
-                            % item 46
+                            % item 769
                             S7 = set_last_modified(LastModified, S6),
                             
                             Ex = exchange(S7),
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
-                            % item 187
+                            % item 771
                             finalize(S9)
                         end
                     ; false ->
-                        % item 289
+                        % item 774
                         IfModifiedSince =
                             elli_request:get_header(<<"If-Modified-Since">>, Req),
-                        % item 33
+                        % item 759
                         case IfModifiedSince =:= undefined of true -> 
-                            % item 284
+                            % item 773
                             {Expires, S4} = call(expires, S3),
                             S5 = set_etag(ETag, S4),
                             S6 = set_expires(Expires, S5),
-                            % item 304
+                            % item 781
                             IfNoneMatch = 
                                 elli_request:get_header(<<"If-None-Match">>, Req),
-                            % item 36
+                            % item 762
                             case IfNoneMatch =:= undefined of true -> 
-                                % item 39
+                                % item 765
                                 case IfNoneMatch =:= <<"*">> of true -> 
-                                    % item 44
+                                    % item 767
                                     % Not Modified
                                     error(304, S6)
                                 ; false ->
-                                    % item 298
+                                    % item 777
                                     ETagMatches = 
                                         match_etag(ETag, IfMatchHeader),
-                                    % item 45
+                                    % item 768
                                     case ETagMatches of true -> 
-                                        % item 44
+                                        % item 767
                                         % Not Modified
                                         error(304, S6)
                                     ; false ->
-                                        % item 46
+                                        % item 769
                                         S7 = set_last_modified(LastModified, S6),
                                         
                                         Ex = exchange(S7),
                                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                         Ex1 = emx:set_resp_body(Response, Ex),
                                         S9 = set_exchange(Ex1, S8),
-                                        % item 187
+                                        % item 771
                                         finalize(S9)
                                     end
                                 end
                             ; false ->
-                                % item 46
+                                % item 769
                                 S7 = set_last_modified(LastModified, S6),
                                 
                                 Ex = exchange(S7),
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
-                                % item 187
+                                % item 771
                                 finalize(S9)
                             end
                         ; false ->
-                            % item 57
+                            % item 770
                             case LastModified > IfModifiedSince of true -> 
-                                % item 371
+                                % item 783
                                 % Precondition Failed
                                 error(412, S3)
                             ; false ->
-                                % item 284
+                                % item 773
                                 {Expires, S4} = call(expires, S3),
                                 S5 = set_etag(ETag, S4),
                                 S6 = set_expires(Expires, S5),
-                                % item 304
+                                % item 781
                                 IfNoneMatch = 
                                     elli_request:get_header(<<"If-None-Match">>, Req),
-                                % item 36
+                                % item 762
                                 case IfNoneMatch =:= undefined of true -> 
-                                    % item 39
+                                    % item 765
                                     case IfNoneMatch =:= <<"*">> of true -> 
-                                        % item 44
+                                        % item 767
                                         % Not Modified
                                         error(304, S6)
                                     ; false ->
-                                        % item 298
+                                        % item 777
                                         ETagMatches = 
                                             match_etag(ETag, IfMatchHeader),
-                                        % item 45
+                                        % item 768
                                         case ETagMatches of true -> 
-                                            % item 44
+                                            % item 767
                                             % Not Modified
                                             error(304, S6)
                                         ; false ->
-                                            % item 46
+                                            % item 769
                                             S7 = set_last_modified(LastModified, S6),
                                             
                                             Ex = exchange(S7),
                                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                             Ex1 = emx:set_resp_body(Response, Ex),
                                             S9 = set_exchange(Ex1, S8),
-                                            % item 187
+                                            % item 771
                                             finalize(S9)
                                         end
                                     end
                                 ; false ->
-                                    % item 46
+                                    % item 769
                                     S7 = set_last_modified(LastModified, S6),
                                     
                                     Ex = exchange(S7),
                                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                     Ex1 = emx:set_resp_body(Response, Ex),
                                     S9 = set_exchange(Ex1, S8),
-                                    % item 187
+                                    % item 771
                                     finalize(S9)
                                 end
                             end
                         end
                     end
                 ; false ->
-                    % item 32
+                    % item 758
                     % Precondition Failed
                     error(412, S2)
                 end
             end
         end
     ; false ->
-        % item 286
-        {PreviouslyExisted, S2} =
-            call(previously_existed, S1),
-        % item 9
-        case PreviouslyExisted of true -> 
-            % item 287
-            {MovedPermanently, S3} = 
-                call(moved_permanently, S2),
-            % item 58
-            case MovedPermanently of true -> 
-                % item 61
-                % Moved Permanently
-                error(301, S3)
-            ; false ->
-                % item 288
-                {MovedTemporarily, S4} =
-                    call(moved_temporarily, S3),
-                % item 62
-                case MovedTemporarily of true -> 
-                    % item 65
-                    % Moved Temporarily
-                    error(307, S4)
-                ; false ->
-                    % item 66
-                    % Gone
-                    error(410, S4)
-                end
-            end
+        % item 784
+        get_flow_no_resource(S1)
+    end
+.
+
+get_flow_no_resource(State) ->
+    % item 803
+    {PreviouslyExisted, S1} =
+        call(previously_existed, State),
+    % item 790
+    case PreviouslyExisted of true -> 
+        % item 804
+        {MovedPermanently, S2} = 
+            call(moved_permanently, S1),
+        % item 794
+        case MovedPermanently of true -> 
+            % item 797
+            % Moved Permanently
+            error(301, S2)
         ; false ->
-            % item 12
-            % Not Found
-            error(404, S2)
+            % item 805
+            {MovedTemporarily, S3} =
+                call(moved_temporarily, S2),
+            % item 798
+            case MovedTemporarily of true -> 
+                % item 801
+                % Moved Temporarily
+                error(307, S3)
+            ; false ->
+                % item 802
+                % Gone
+                error(410, S3)
+            end
         end
+    ; false ->
+        % item 793
+        % Not Found
+        error(404, S1)
     end
 .
 
@@ -922,11 +927,12 @@ get_header(Name, State, Default) ->
 
 handle_request(State) ->
     % item 596
-    {Code, EndDoRequestState} = try do_request(State) of
-        {_Code, _S1}=R -> R
-    catch
-        throw:{{halt, C}, S1} -> {C, S1}
-    end,
+    {Code, EndDoRequestState} = 
+        try do_request(State) of
+            {_Code, _S1}=R -> R
+        catch
+            throw:{{halt, C}, S1} -> {C, S1}
+        end,
     % item 598
     CodeState = set_response_code(Code, EndDoRequestState),
     % item 597
@@ -939,225 +945,230 @@ has_resp_body(State) ->
 .
 
 options_flow(State) ->
-    % item 387
+    % item 984
     {Hdrs, S1} = call(options, State),
     Exc = exchange(State),
     Exc1 = emx:set_resp_headers(Hdrs, Exc),
     S2 = set_exchange(Exc1, S1),
-    % item 401
+    % item 985
     % Ok
     respond(200, S2)
 .
 
 post_flow(State) ->
-    % item 294
+    % item 826
     Req = request(State),
-    % item 389
+    % item 838
     {ValidContentHeaders, S1} = 
         call(valid_content_headers, State),
-    % item 392
+    % item 841
     case ValidContentHeaders of true -> 
-        % item 390
+        % item 839
         {KnownContentType, S2} =
             call(known_content_type, S1),
-        % item 394
+        % item 843
         case KnownContentType of true -> 
-            % item 391
+            % item 840
             {ValidEntityLength, S3} =
                 call(valid_entity_length, S2),
-            % item 396
+            % item 845
             case ValidEntityLength of true -> 
-                % item 388
+                % item 837
                 {ResourceExists, S4} = 
                     call(resource_exists, S3),
-                % item 72
+                % item 811
                 case ResourceExists of true -> 
-                    % item 306
+                    % item 828
                     {LastModified, S5} = call(last_modified, S4),
-                    % item 307
+                    % item 829
                     case LastModified =:= undefined of true -> 
-                        % item 295
+                        % item 827
                         IfModifiedSince =
                             elli_request:get_header(<<"If-Modified-Since">>, Req),
-                        % item 75
+                        % item 814
                         case IfModifiedSince =:= undefined of true -> 
-                            % item 312
+                            % item 831
                             {SelectedContentType, S6} = 
                                 select_content_type(S5),
-                            % item 81
+                            % item 815
                             case SelectedContentType =:= none of true -> 
-                                % item 112
+                                % item 818
                                 % Unsupported MediaType
                                 respond(415, S6)
                             ; false ->
-                                % item 315
+                                % item 832
                                 {_, ProcessFun} = SelectedContentType,
                                 {ProcessResult, S7} = call(ProcessFun, S6),
                                 S8 = encode_body_if_set(S7),
-                                % item 325
+                                % item 835
                                 case ProcessResult =:= true of true -> 
-                                    % item 324
+                                    % item 834
                                     finalize(S8)
                                 ; false ->
-                                    % item 323
+                                    % item 833
                                     {redirect, Url} = ProcessResult,
                                     S8 = set_header_if_not_set(<<"Location">>, Url, S7),
-                                    % item 100
+                                    % item 817
                                     % See Other
                                     respond(303, S8)
                                 end
                             end
                         ; false ->
-                            % item 181
+                            % item 821
                             case LastModified > IfModifiedSince of true -> 
-                                % item 312
+                                % item 831
                                 {SelectedContentType, S6} = 
                                     select_content_type(S5),
-                                % item 81
+                                % item 815
                                 case SelectedContentType =:= none of true -> 
-                                    % item 112
+                                    % item 818
                                     % Unsupported MediaType
                                     respond(415, S6)
                                 ; false ->
-                                    % item 315
+                                    % item 832
                                     {_, ProcessFun} = SelectedContentType,
                                     {ProcessResult, S7} = call(ProcessFun, S6),
                                     S8 = encode_body_if_set(S7),
-                                    % item 325
+                                    % item 835
                                     case ProcessResult =:= true of true -> 
-                                        % item 324
+                                        % item 834
                                         finalize(S8)
                                     ; false ->
-                                        % item 323
+                                        % item 833
                                         {redirect, Url} = ProcessResult,
                                         S8 = set_header_if_not_set(<<"Location">>, Url, S7),
-                                        % item 100
+                                        % item 817
                                         % See Other
                                         respond(303, S8)
                                     end
                                 end
                             ; false ->
-                                % item 184
+                                % item 823
                                 % generate_etag/2,
-                                % item 185
+                                % item 824
                                 % expires/2,
-                                % item 186
+                                % item 825
                                 % Not Modified
                                 respond(304, S5)
                             end
                         end
                     ; false ->
-                        % item 312
+                        % item 831
                         {SelectedContentType, S6} = 
                             select_content_type(S5),
-                        % item 81
+                        % item 815
                         case SelectedContentType =:= none of true -> 
-                            % item 112
+                            % item 818
                             % Unsupported MediaType
                             respond(415, S6)
                         ; false ->
-                            % item 315
+                            % item 832
                             {_, ProcessFun} = SelectedContentType,
                             {ProcessResult, S7} = call(ProcessFun, S6),
                             S8 = encode_body_if_set(S7),
-                            % item 325
+                            % item 835
                             case ProcessResult =:= true of true -> 
-                                % item 324
+                                % item 834
                                 finalize(S8)
                             ; false ->
-                                % item 323
+                                % item 833
                                 {redirect, Url} = ProcessResult,
                                 S8 = set_header_if_not_set(<<"Location">>, Url, S7),
-                                % item 100
+                                % item 817
                                 % See Other
                                 respond(303, S8)
                             end
                         end
                     end
                 ; false ->
-                    % item 309
-                    {PreviouslyExisted, S5} =
-                        call(previously_existed, S4),
-                    % item 104
-                    case PreviouslyExisted of true -> 
-                        % item 310
-                        {MovedPermanently, S6} = 
-                            call(moved_permanently, S5),
-                        % item 113
-                        case MovedPermanently of true -> 
-                            % item 120
-                            % Moved Permanently
-                            respond(301, S6)
-                        ; false ->
-                            % item 311
-                            {MovedTemporarily, S7} = 
-                                call(moved_temporarily, S6),
-                            % item 121
-                            case MovedTemporarily of true -> 
-                                % item 124
-                                % Moved Temporarily
-                                respond(307, S7)
-                            ; false ->
-                                % item 125
-                                % Gone
-                                respond(410, S7)
-                            end
-                        end
-                    ; false ->
-                        % item 313
-                        {AllowMissingPost, S6} = 
-                            call(allow_missing_post, S5),
-                        % item 117
-                        case AllowMissingPost of true -> 
-                            % item 589
-                            {SelectedContentType, S7} = 
-                                select_content_type(S6),
-                            % item 126
-                            case SelectedContentType =:= none of true -> 
-                                % item 590
-                                {_, ProcessFun} = SelectedContentType,
-                                {ProcessResult, S8} = call(ProcessFun, S7),
-                                Location = get_resp_header(<<"Location">>, S8),
-                                % item 134
-                                case Location =/= undefined of true -> 
-                                    % item 137
-                                    % Created
-                                    respond(201, S8)
-                                ; false ->
-                                    % item 180
-                                    finalize(S8)
-                                end
-                            ; false ->
-                                % item 338
-                                % Unsupported MediaType
-                                respond(415, S7)
-                            end
-                        ; false ->
-                            % item 116
-                            % Not Found
-                            respond(404, S6)
-                        end
-                    end
+                    % item 850
+                    post_flow_no_resource(S4)
                 end
             ; false ->
-                % item 398
+                % item 847
                 % Request Entity Too Large
                 respond(413, S3)
             end
         ; false ->
-            % item 399
+            % item 848
             % Unsupported Media Type
             respond(415, S2)
         end
     ; false ->
-        % item 400
+        % item 849
         % Not Implemented
         respond(501, S1)
     end
 .
 
+post_flow_no_resource(State) ->
+    % item 873
+    {PreviouslyExisted, S1} =
+        call(previously_existed, State),
+    % item 856
+    case PreviouslyExisted of true -> 
+        % item 874
+        {MovedPermanently, S2} = 
+            call(moved_permanently, S1),
+        % item 858
+        case MovedPermanently of true -> 
+            % item 863
+            % Moved Permanently
+            respond(301, S2)
+        ; false ->
+            % item 875
+            {MovedTemporarily, S3} = 
+                call(moved_temporarily, S2),
+            % item 864
+            case MovedTemporarily of true -> 
+                % item 865
+                % Moved Temporarily
+                respond(307, S3)
+            ; false ->
+                % item 866
+                % Gone
+                respond(410, S3)
+            end
+        end
+    ; false ->
+        % item 876
+        {AllowMissingPost, S2} = 
+            call(allow_missing_post, S1),
+        % item 861
+        case AllowMissingPost of true -> 
+            % item 878
+            {SelectedContentType, S3} = 
+                select_content_type(S2),
+            % item 867
+            case SelectedContentType =:= none of true -> 
+                % item 879
+                {_, ProcessFun} = SelectedContentType,
+                {ProcessResult, S4} = call(ProcessFun, S3),
+                Location = get_resp_header(<<"Location">>, S4),
+                % item 869
+                case Location =/= undefined of true -> 
+                    % item 871
+                    % Created
+                    respond(201, S4)
+                ; false ->
+                    % item 872
+                    finalize(S4)
+                end
+            ; false ->
+                % item 877
+                % Unsupported MediaType
+                respond(415, S3)
+            end
+        ; false ->
+            % item 860
+            % Not Found
+            respond(404, S2)
+        end
+    end
+.
+
 put_flow(State) ->
-    % item 386
+    % item 978
     State
 .
 
