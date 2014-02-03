@@ -104,7 +104,7 @@ default(known_methods) ->
 default(content_types_provided) -> 
     [{<<"text/html">>, to_html}];
 default(content_types_accepted) -> 
-    [{<<"*/*">>, process}]; 
+    [{<<"*/*">>, process_request}]; 
 default(delete_resource) -> false;
 default(delete_completed) -> true;
 default(post_is_create) -> false;
