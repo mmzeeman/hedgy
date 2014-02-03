@@ -6,7 +6,9 @@ config() ->
         {dispatcher, {elli_machine_dispatcher, [
             {dispatch_list, [
                 {[<<"post">>, '*'], test_post_controller, []},
-                {[<<"ws">>, '*'], test_ws_controller, []}
+                {[<<"ws">>, '*'], test_ws_controller, []},
+                {[<<"auth">>, <<"realm">>], test_auth_controller, {realm, <<"Basic realm=Drakon">>}},
+                {[<<"auth">>, <<"halt">>], test_auth_controller, {halt, 200}}
             ]}
         ]}}
     ], 
@@ -34,6 +36,18 @@ post_test() ->
             <<"<html><head></head><body>thank-you</body></html>">>},
         elli_test:call('POST', <<"/post">>, [{<<"Host">>, <<"example.com">>}], <<"x=y;">>, Config)),
      ok.
+
+auth_test() ->
+    Config = config(),
+    ?assertEqual({401, [{<<"WWW-Authenticate">>, <<"Basic realm=Drakon">>}], 
+            <<>>},
+        elli_test:call('GET', <<"/auth/realm">>, [], <<>>, Config)),
+
+    %% Uses the halt feature which stops processing of the flow.
+    ?assertEqual({200, [], <<"halt">>},
+        elli_test:call('GET', <<"/auth/halt">>, [], <<>>, Config)),
+    ok.
+
 
 % ws_test() ->
 %     Config = config(),

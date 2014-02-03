@@ -306,12 +306,13 @@ do_request(State) ->
                             ; false ->
                                 % item 680
                                 case is_binary(IsAuthorized) of true -> 
+                                    % item 986
                                     % item 684
                                     Ex = emx:set_resp_header(<<"WWW-Authenticate">>, 
                                         IsAuthorized, exchange(S7)), 
                                     S8 = set_exchange(Ex, S7),
                                     % item 282
-                                    respond(401, S7)
+                                    respond(401, S8)
                                 ; false ->
                                     % item 683
                                     throw({error, no_auth_header})
