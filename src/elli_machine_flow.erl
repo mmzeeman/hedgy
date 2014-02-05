@@ -399,6 +399,16 @@ get_flow(State) ->
                     elli_request:get_header(<<"If-None-Match">>, Req),
                 % item 762
                 case IfNoneMatch =:= undefined of true -> 
+                    % item 769
+                    S7 = set_last_modified(LastModified, S6),
+                    
+                    Ex = exchange(S7),
+                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                    Ex1 = emx:set_resp_body(Response, Ex),
+                    S9 = set_exchange(Ex1, S8),
+                    % item 771
+                    finalize(S9)
+                ; false ->
                     % item 765
                     case IfNoneMatch =:= <<"*">> of true -> 
                         % item 767
@@ -407,7 +417,7 @@ get_flow(State) ->
                     ; false ->
                         % item 777
                         ETagMatches = 
-                            match_etag(ETag, IfMatchHeader),
+                            match_etag(ETag, IfNoneMatch),
                         % item 768
                         case ETagMatches of true -> 
                             % item 767
@@ -425,16 +435,6 @@ get_flow(State) ->
                             finalize(S9)
                         end
                     end
-                ; false ->
-                    % item 769
-                    S7 = set_last_modified(LastModified, S6),
-                    
-                    Ex = exchange(S7),
-                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                    Ex1 = emx:set_resp_body(Response, Ex),
-                    S9 = set_exchange(Ex1, S8),
-                    % item 771
-                    finalize(S9)
                 end
             ; false ->
                 % item 774
@@ -451,6 +451,16 @@ get_flow(State) ->
                         elli_request:get_header(<<"If-None-Match">>, Req),
                     % item 762
                     case IfNoneMatch =:= undefined of true -> 
+                        % item 769
+                        S7 = set_last_modified(LastModified, S6),
+                        
+                        Ex = exchange(S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                        Ex1 = emx:set_resp_body(Response, Ex),
+                        S9 = set_exchange(Ex1, S8),
+                        % item 771
+                        finalize(S9)
+                    ; false ->
                         % item 765
                         case IfNoneMatch =:= <<"*">> of true -> 
                             % item 767
@@ -459,7 +469,7 @@ get_flow(State) ->
                         ; false ->
                             % item 777
                             ETagMatches = 
-                                match_etag(ETag, IfMatchHeader),
+                                match_etag(ETag, IfNoneMatch),
                             % item 768
                             case ETagMatches of true -> 
                                 % item 767
@@ -477,16 +487,6 @@ get_flow(State) ->
                                 finalize(S9)
                             end
                         end
-                    ; false ->
-                        % item 769
-                        S7 = set_last_modified(LastModified, S6),
-                        
-                        Ex = exchange(S7),
-                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                        Ex1 = emx:set_resp_body(Response, Ex),
-                        S9 = set_exchange(Ex1, S8),
-                        % item 771
-                        finalize(S9)
                     end
                 ; false ->
                     % item 770
@@ -504,6 +504,16 @@ get_flow(State) ->
                             elli_request:get_header(<<"If-None-Match">>, Req),
                         % item 762
                         case IfNoneMatch =:= undefined of true -> 
+                            % item 769
+                            S7 = set_last_modified(LastModified, S6),
+                            
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
+                            % item 771
+                            finalize(S9)
+                        ; false ->
                             % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
                                 % item 767
@@ -512,7 +522,7 @@ get_flow(State) ->
                             ; false ->
                                 % item 777
                                 ETagMatches = 
-                                    match_etag(ETag, IfMatchHeader),
+                                    match_etag(ETag, IfNoneMatch),
                                 % item 768
                                 case ETagMatches of true -> 
                                     % item 767
@@ -530,16 +540,6 @@ get_flow(State) ->
                                     finalize(S9)
                                 end
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            % item 771
-                            finalize(S9)
                         end
                     end
                 end
@@ -560,6 +560,16 @@ get_flow(State) ->
                         elli_request:get_header(<<"If-None-Match">>, Req),
                     % item 762
                     case IfNoneMatch =:= undefined of true -> 
+                        % item 769
+                        S7 = set_last_modified(LastModified, S6),
+                        
+                        Ex = exchange(S7),
+                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                        Ex1 = emx:set_resp_body(Response, Ex),
+                        S9 = set_exchange(Ex1, S8),
+                        % item 771
+                        finalize(S9)
+                    ; false ->
                         % item 765
                         case IfNoneMatch =:= <<"*">> of true -> 
                             % item 767
@@ -568,7 +578,7 @@ get_flow(State) ->
                         ; false ->
                             % item 777
                             ETagMatches = 
-                                match_etag(ETag, IfMatchHeader),
+                                match_etag(ETag, IfNoneMatch),
                             % item 768
                             case ETagMatches of true -> 
                                 % item 767
@@ -586,16 +596,6 @@ get_flow(State) ->
                                 finalize(S9)
                             end
                         end
-                    ; false ->
-                        % item 769
-                        S7 = set_last_modified(LastModified, S6),
-                        
-                        Ex = exchange(S7),
-                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                        Ex1 = emx:set_resp_body(Response, Ex),
-                        S9 = set_exchange(Ex1, S8),
-                        % item 771
-                        finalize(S9)
                     end
                 ; false ->
                     % item 774
@@ -612,6 +612,16 @@ get_flow(State) ->
                             elli_request:get_header(<<"If-None-Match">>, Req),
                         % item 762
                         case IfNoneMatch =:= undefined of true -> 
+                            % item 769
+                            S7 = set_last_modified(LastModified, S6),
+                            
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
+                            % item 771
+                            finalize(S9)
+                        ; false ->
                             % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
                                 % item 767
@@ -620,7 +630,7 @@ get_flow(State) ->
                             ; false ->
                                 % item 777
                                 ETagMatches = 
-                                    match_etag(ETag, IfMatchHeader),
+                                    match_etag(ETag, IfNoneMatch),
                                 % item 768
                                 case ETagMatches of true -> 
                                     % item 767
@@ -638,16 +648,6 @@ get_flow(State) ->
                                     finalize(S9)
                                 end
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            % item 771
-                            finalize(S9)
                         end
                     ; false ->
                         % item 770
@@ -665,6 +665,16 @@ get_flow(State) ->
                                 elli_request:get_header(<<"If-None-Match">>, Req),
                             % item 762
                             case IfNoneMatch =:= undefined of true -> 
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                % item 771
+                                finalize(S9)
+                            ; false ->
                                 % item 765
                                 case IfNoneMatch =:= <<"*">> of true -> 
                                     % item 767
@@ -673,7 +683,7 @@ get_flow(State) ->
                                 ; false ->
                                     % item 777
                                     ETagMatches = 
-                                        match_etag(ETag, IfMatchHeader),
+                                        match_etag(ETag, IfNoneMatch),
                                     % item 768
                                     case ETagMatches of true -> 
                                         % item 767
@@ -691,16 +701,6 @@ get_flow(State) ->
                                         finalize(S9)
                                     end
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                % item 771
-                                finalize(S9)
                             end
                         end
                     end
@@ -724,6 +724,16 @@ get_flow(State) ->
                             elli_request:get_header(<<"If-None-Match">>, Req),
                         % item 762
                         case IfNoneMatch =:= undefined of true -> 
+                            % item 769
+                            S7 = set_last_modified(LastModified, S6),
+                            
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
+                            % item 771
+                            finalize(S9)
+                        ; false ->
                             % item 765
                             case IfNoneMatch =:= <<"*">> of true -> 
                                 % item 767
@@ -732,7 +742,7 @@ get_flow(State) ->
                             ; false ->
                                 % item 777
                                 ETagMatches = 
-                                    match_etag(ETag, IfMatchHeader),
+                                    match_etag(ETag, IfNoneMatch),
                                 % item 768
                                 case ETagMatches of true -> 
                                     % item 767
@@ -750,16 +760,6 @@ get_flow(State) ->
                                     finalize(S9)
                                 end
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            % item 771
-                            finalize(S9)
                         end
                     ; false ->
                         % item 774
@@ -776,6 +776,16 @@ get_flow(State) ->
                                 elli_request:get_header(<<"If-None-Match">>, Req),
                             % item 762
                             case IfNoneMatch =:= undefined of true -> 
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                % item 771
+                                finalize(S9)
+                            ; false ->
                                 % item 765
                                 case IfNoneMatch =:= <<"*">> of true -> 
                                     % item 767
@@ -784,7 +794,7 @@ get_flow(State) ->
                                 ; false ->
                                     % item 777
                                     ETagMatches = 
-                                        match_etag(ETag, IfMatchHeader),
+                                        match_etag(ETag, IfNoneMatch),
                                     % item 768
                                     case ETagMatches of true -> 
                                         % item 767
@@ -802,16 +812,6 @@ get_flow(State) ->
                                         finalize(S9)
                                     end
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                % item 771
-                                finalize(S9)
                             end
                         ; false ->
                             % item 770
@@ -829,6 +829,16 @@ get_flow(State) ->
                                     elli_request:get_header(<<"If-None-Match">>, Req),
                                 % item 762
                                 case IfNoneMatch =:= undefined of true -> 
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    % item 771
+                                    finalize(S9)
+                                ; false ->
                                     % item 765
                                     case IfNoneMatch =:= <<"*">> of true -> 
                                         % item 767
@@ -837,7 +847,7 @@ get_flow(State) ->
                                     ; false ->
                                         % item 777
                                         ETagMatches = 
-                                            match_etag(ETag, IfMatchHeader),
+                                            match_etag(ETag, IfNoneMatch),
                                         % item 768
                                         case ETagMatches of true -> 
                                             % item 767
@@ -855,16 +865,6 @@ get_flow(State) ->
                                             finalize(S9)
                                         end
                                     end
-                                ; false ->
-                                    % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    % item 771
-                                    finalize(S9)
                                 end
                             end
                         end
@@ -943,6 +943,13 @@ handle_request(State) ->
 has_resp_body(State) ->
     % item 652
     emx:has_resp_body(exchange(State))
+.
+
+match_etag(ETag, HeaderVal) ->
+    % item 993
+    ETags = elli_machine_util:split_quoted_strings(HeaderVal),
+    % item 994
+    lists:member(ETag, ETags)
 .
 
 options_flow(State) ->
@@ -1248,14 +1255,16 @@ set_resp_header(Header, Value, #machine_flow_state{exchange=Ex}=S) ->
     Ex1 = emx:set_resp_header(Header, Value, Ex),
     S#machine_flow_state{exchange=Ex1}.
 
-get_resp_header(_Header, State) ->
-    {undefined, State}.
-
-match_etag(_Tag, _TagList) ->
-    false.
+get_resp_header(Header, #machine_flow_state{exchange=Ex}=State) ->
+    {emx:get_resp_header(Header, Ex), State}.
 
 encode_body_if_set(State) ->
     State.
 
-set_header_if_not_set(_Header, _Value, State) ->
-    State.
+set_header_if_not_set(Header, Value, #machine_flow_state{exchange=Ex}=State) ->
+    Ex1 = case emx:get_resp_header(Header, Ex) of
+        undefined ->
+            emx:set_resp_header(Header, Value, Ex);
+        _ -> Ex
+    end,
+    set_exchange(Ex1, State).

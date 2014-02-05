@@ -32,6 +32,8 @@
     choose_charset/2,
     choose_encoding/2,
 
+    split_quoted_strings/1,
+
     binary_join/2,
     remove_whitespace/1,
 
@@ -336,22 +338,22 @@ escape_quotes([Char | Rest], Acc) ->
 split_quoted_strings(Str) ->
     split_quoted_strings(Str, []).
 
-split_quoted_strings([], Acc) ->
+split_quoted_strings(<<>>, Acc) ->
     lists:reverse(Acc);
-split_quoted_strings([$" | Rest], Acc) ->
-    {Str, Cont} = unescape_quoted_string(Rest, []),
+split_quoted_strings(<<$", Rest/binary>>, Acc) ->
+    {Str, Cont} = unescape_quoted_string(Rest, <<>>),
     split_quoted_strings(Cont, [Str | Acc]);
-split_quoted_strings([_Skip | Rest], Acc) ->
+split_quoted_strings(<<_, Rest/binary>>, Acc) ->
     split_quoted_strings(Rest, Acc).
 
-unescape_quoted_string([], Acc) ->
-    {lists:reverse(Acc), []};
-unescape_quoted_string([$\\, Char | Rest], Acc) -> % Any quoted char should be unquoted
-    unescape_quoted_string(Rest, [Char | Acc]);
-unescape_quoted_string([$" | Rest], Acc) ->        % Quote indicates end of this string
-    {lists:reverse(Acc), Rest};
-unescape_quoted_string([Char | Rest], Acc) ->
-    unescape_quoted_string(Rest, [Char | Acc]).
+unescape_quoted_string(<<>>, Acc) ->
+    {Acc, <<>>};
+unescape_quoted_string(<<$\\, Char, Rest/binary>>, Acc) -> % Any quoted char should be unquoted
+    unescape_quoted_string(Rest, <<Acc/binary, Char>>);
+unescape_quoted_string(<<$", Rest/binary>>, Acc) ->        % Quote indicates end of this string
+    {Acc, Rest};
+unescape_quoted_string(<<Char, Rest/binary>>, Acc) ->
+    unescape_quoted_string(Rest, <<Acc/binary, Char>>).
 
 day(1) -> <<"Mon">>;
 day(2) -> <<"Tue">>;
@@ -532,8 +534,11 @@ select_content_type_test() ->
     ?assertEqual({<<"*/*">>, accept_all}, 
         select_content_type([{<<"*/*">>, accept_all}], ContentType)),
 
-
     ok.
 
+split_quoted_strings_test() ->
+    ?assertEqual([<<"hi">>], split_quoted_strings(<<"\"hi\"">>)),
+    ?assertEqual([<<"hi">>, <<"there">>], split_quoted_strings(<<"\"hi\" \"there\"">>)),
+    ok.
 
 -endif.
