@@ -438,7 +438,7 @@ get_flow(State) ->
                         case LastModified > IfModifiedSince of true -> 
                             % item 783
                             % Precondition Failed
-                            error(412, S3)
+                            respond(412, S3)
                         ; false ->
                             % item 773
                             {Expires, S4} = call(expires, S3),
@@ -519,7 +519,7 @@ get_flow(State) ->
             ; false ->
                 % item 758
                 % Precondition Failed
-                error(412, S2)
+                respond(412, S2)
             end
         ; false ->
             % item 775
@@ -572,7 +572,7 @@ get_flow(State) ->
                     case LastModified > IfModifiedSince of true -> 
                         % item 783
                         % Precondition Failed
-                        error(412, S3)
+                        respond(412, S3)
                     ; false ->
                         % item 773
                         {Expires, S4} = call(expires, S3),
@@ -670,7 +670,7 @@ get_flow_no_resource(State) ->
         case MovedPermanently of true -> 
             % item 797
             % Moved Permanently
-            error(301, S2)
+            respond(301, S2)
         ; false ->
             % item 805
             {MovedTemporarily, S3} =
@@ -679,17 +679,17 @@ get_flow_no_resource(State) ->
             case MovedTemporarily of true -> 
                 % item 801
                 % Moved Temporarily
-                error(307, S3)
+                respond(307, S3)
             ; false ->
                 % item 802
                 % Gone
-                error(410, S3)
+                respond(410, S3)
             end
         end
     ; false ->
         % item 793
         % Not Found
-        error(404, S1)
+        respond(404, S1)
     end
 .
 
