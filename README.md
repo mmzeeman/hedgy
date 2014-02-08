@@ -117,6 +117,12 @@ addition to whichever of these a controller wishes to use, it also must
 export all of the functions named in the return values of the
 `content_types_provided` and `content_types_accepted` functions.
 
+The core logic of elli_machine is created with DRAKON, a visual language
+for specifications from the Russian space program. DRAKON is used for 
+capturing requirements and building software that controls spacecraft.
+
+The rules of DRAKON are optimized to ensure easy understanding by human beings. More information: http://drakon-editor.sourceforge.net
+
 ![Handle Request Diagram](doc/handle_request.png "Handling a request")
 ![Get Flow](doc/get_flow.png "Handling the GET part")
 
