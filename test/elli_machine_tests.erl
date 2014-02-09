@@ -7,6 +7,7 @@ config() ->
             {dispatch_list, [
                 %% For get requests
                 {[<<"get">>, <<"etag">>], example_controller, [{etag, <<"example-tag">>}]},
+                {[<<"get">>, <<"last_modified">>], example_controller, [{last_modified, {{2010, 4, 1}, {10, 30, 51}} } ]},                
 
                 %% For post tests
                 {[<<"post">>, '*'], test_post_controller, []},
@@ -18,11 +19,7 @@ config() ->
         ]}}
     ], 
 
-    MiddlewareConfig = [
-        {mods, [
-            {elli_machine, MachineConfig}
-        ]}
-    ],
+    MiddlewareConfig = [{mods, [{elli_machine, MachineConfig}]}],
 
     [{callback, elli_middleware},
      {callback_args, MiddlewareConfig}, {port, 8000}].
@@ -80,20 +77,30 @@ get_etag_test() ->
     Config = config(),
 
     %% Test if the etag is added.
-    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>},
-        {<<"ETag">>, <<"\"example-tag\"">>}], <<"Hello, new world">>}, 
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"ETag">>, <<"\"example-tag\"">>}], 
+        <<"Hello, new world">>}, 
                       elli_test:call('GET', <<"/get/etag">>, [], <<>>, Config)),
 
     %% Different etag provided
-    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
-        {<<"ETag">>, <<"\"example-tag\"">>}], <<"Hello, new world">>}, 
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"ETag">>, <<"\"example-tag\"">>}], 
+        <<"Hello, new world">>}, 
                       elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"other\"">>}], <<>>, Config)),
 
     %% Same tag... should respond with 403
     ?assertEqual({304, [{<<"ETag">>, <<"\"example-tag\"">>}], <<>>}, 
                 elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"example-tag\"">>}], <<>>, Config)),
 
+    ok.
+
+last_modified_test() ->
+    Config = config(),
+
+    %% Test if the last-modified header is added
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
+        {<<"Last-Modified">>, <<"Thu, 01 Apr 2010 10:30:51 GMT">>}], <<"Hello, new world">>}, 
+        elli_test:call('GET', <<"/get/last_modified">>, [], <<>>, Config)),
 
     ok.
+
 
 
