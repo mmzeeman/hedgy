@@ -4,16 +4,27 @@
 
 -module(example_controller).
 
--export([init/1, ping/2, to_html/2, render_error/4, handle_event/3]).
+-export([init/1, ping/2, to_html/2, 
+	expires/2, generate_etag/2, last_modified/2,
+	render_error/4, handle_event/3]).
 
-init(_Args) -> 
-	{ok, undefined}.
+init(Props) -> 
+	{ok, Props}.
 
-ping(Exchange, Context) ->
-	{pong, Exchange, Context}.
+ping(Exchange, Props) ->
+	{pong, Exchange, Props}.
 
-to_html(Exchange, Context) -> 
-	{<<"Hello, new world">>, Exchange, Context}.
+generate_etag(X, Props) ->
+ 	{proplists:get_value(etag, Props), X, Props}.
+
+expires(X, Props) ->
+	{proplists:get_value(expires, Props), X, Props}.
+
+last_modified(X, Props) ->
+	{proplists:get_value(last_modified, Props), X, Props}.
+
+to_html(Exchange, Props) -> 
+	{<<"Hello, new world">>, Exchange, Props}.
 
 %%
 %% 

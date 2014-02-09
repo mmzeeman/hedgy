@@ -5,8 +5,13 @@ config() ->
     MachineConfig = [
         {dispatcher, {elli_machine_dispatcher, [
             {dispatch_list, [
+                %% For get requests
+                {[<<"get">>, <<"etag">>], example_controller, [{etag, <<"example-tag">>}]},
+
+                %% For post tests
                 {[<<"post">>, '*'], test_post_controller, []},
-                {[<<"ws">>, '*'], test_ws_controller, []},
+            
+                %% For auth tests
                 {[<<"auth">>, <<"realm">>], test_auth_controller, {realm, <<"Basic realm=Drakon">>}},
                 {[<<"auth">>, <<"halt">>], test_auth_controller, {halt, 200}}
             ]}
@@ -62,7 +67,7 @@ auth_test() ->
 %     ok.
 
 
-get_test() ->
+get_error_test() ->
     Config = config(),
     ?assertEqual({405, [{<<"Allow">>, <<"POST">>}], <<>>},
                  elli_test:call('GET', <<"/post">>, 
@@ -70,3 +75,25 @@ get_test() ->
     
     ?assertEqual({404, [], <<"Not Found">>}, elli_test:call('GET', <<"/not_found">>, [], <<>>, Config)),
     ok.
+
+get_etag_test() ->
+    Config = config(),
+
+    %% Test if the etag is added.
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>},
+        {<<"ETag">>, <<"\"example-tag\"">>}], <<"Hello, new world">>}, 
+                      elli_test:call('GET', <<"/get/etag">>, [], <<>>, Config)),
+
+    %% Different etag provided
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
+        {<<"ETag">>, <<"\"example-tag\"">>}], <<"Hello, new world">>}, 
+                      elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"other\"">>}], <<>>, Config)),
+
+    %% Same tag... should respond with 403
+    ?assertEqual({304, [{<<"ETag">>, <<"\"example-tag\"">>}], <<>>}, 
+                elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"example-tag\"">>}], <<>>, Config)),
+
+
+    ok.
+
+

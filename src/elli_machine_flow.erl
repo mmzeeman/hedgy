@@ -129,7 +129,7 @@ call(Name, State) ->
             throw({not_implemented, E});
         {error, _, _}=E ->
             throw({not_implemented, E});
-        {halt, Code}=Halt ->
+        {halt, _Code}=Halt ->
             throw({Halt, S1}); 
         _ ->
             Result
@@ -155,32 +155,21 @@ content_negotiation(State) ->
                     accept_content_encoding(S3),
                 % item 947
                 case ContentEncodingAccepted of true -> 
-                    % item 950
-                    %% Set Content-Type header
-                    S5 = with_exchange(fun(Exchange) ->
-                            CType = emx:get_resp_content_type(Exchange),
-                            CSet = case emx:get_resp_chosen_charset(Exchange) of
-                                undefined -> <<"">>;
-                                Cs -> <<"; charset=", Cs/binary>>
-                            end,
-                            emx:set_resp_header(<<"Content-Type">>, 
-                            <<CType/binary, CSet/binary>>, Exchange) 
-                         end, S4),
                     % item 951
                     V1 = add_variance(ContentTypesAvailable, <<"Accept">>, []),
                     V2 = add_variance(CharsetsAvailable, <<"Accept-Charset">>, V1),
                     V3 = add_variance(ContentEncodingsAvailable, <<"Accept-Encoding">>, V2),
-                    {ControllerVariances, S6} = call(variances, S5),
+                    {ControllerVariances, S5} = call(variances, S4),
                     Variances = ControllerVariances ++ V3,
                     % item 952
                     case Variances =:= [] of true -> 
                         % item 954
-                        {true, S6}
+                        {true, S5}
                     ; false ->
                         % item 937
-                        S7 = set_resp_header(<<"Vary">>, 
-                            elli_machine_util:binary_join(Variances, <<", ">>), S6),
-                        {true, S7}
+                        S6 = set_resp_header(<<"Vary">>, 
+                            elli_machine_util:binary_join(Variances, <<", ">>), S5),
+                        {true, S6}
                     end
                 ; false ->
                     % item 949
@@ -345,6 +334,12 @@ do_request(State) ->
     end
 .
 
+encode_etag(ETag) ->
+    % item 1058
+    % item 1057
+    <<$", ETag/binary, $">>
+.
+
 exchange(State) ->
     % item 664
     State#machine_flow_state.exchange
@@ -398,8 +393,9 @@ get_flow(State) ->
                     % item 759
                     case IfModifiedSince =:= undefined of true -> 
                         % item 773
-                        {Expires, S4} = call(expires, S3),
-                        S5 = set_etag(ETag, S4),
+                        S4 = set_etag(ETag, S3),
+                        
+                        {Expires, S5} = call(expires, S4),
                         S6 = set_expires(Expires, S5),
                         % item 781
                         IfNoneMatch = 
@@ -419,8 +415,10 @@ get_flow(State) ->
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
                                 % item 771
-                                finalize(S9)
+                                finalize(S10)
                             end
                         ; false ->
                             % item 769
@@ -430,8 +428,10 @@ get_flow(State) ->
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
+                            
+                            S10 = set_content_type(S9),
                             % item 771
-                            finalize(S9)
+                            finalize(S10)
                         end
                     ; false ->
                         % item 770
@@ -441,8 +441,9 @@ get_flow(State) ->
                             respond(412, S3)
                         ; false ->
                             % item 773
-                            {Expires, S4} = call(expires, S3),
-                            S5 = set_etag(ETag, S4),
+                            S4 = set_etag(ETag, S3),
+                            
+                            {Expires, S5} = call(expires, S4),
                             S6 = set_expires(Expires, S5),
                             % item 781
                             IfNoneMatch = 
@@ -462,8 +463,10 @@ get_flow(State) ->
                                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                     Ex1 = emx:set_resp_body(Response, Ex),
                                     S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
                                     % item 771
-                                    finalize(S9)
+                                    finalize(S10)
                                 end
                             ; false ->
                                 % item 769
@@ -473,15 +476,18 @@ get_flow(State) ->
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
                                 % item 771
-                                finalize(S9)
+                                finalize(S10)
                             end
                         end
                     end
                 ; false ->
                     % item 773
-                    {Expires, S4} = call(expires, S3),
-                    S5 = set_etag(ETag, S4),
+                    S4 = set_etag(ETag, S3),
+                    
+                    {Expires, S5} = call(expires, S4),
                     S6 = set_expires(Expires, S5),
                     % item 781
                     IfNoneMatch = 
@@ -501,8 +507,10 @@ get_flow(State) ->
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
+                            
+                            S10 = set_content_type(S9),
                             % item 771
-                            finalize(S9)
+                            finalize(S10)
                         end
                     ; false ->
                         % item 769
@@ -512,8 +520,10 @@ get_flow(State) ->
                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                         Ex1 = emx:set_resp_body(Response, Ex),
                         S9 = set_exchange(Ex1, S8),
+                        
+                        S10 = set_content_type(S9),
                         % item 771
-                        finalize(S9)
+                        finalize(S10)
                     end
                 end
             ; false ->
@@ -532,8 +542,9 @@ get_flow(State) ->
                 % item 759
                 case IfModifiedSince =:= undefined of true -> 
                     % item 773
-                    {Expires, S4} = call(expires, S3),
-                    S5 = set_etag(ETag, S4),
+                    S4 = set_etag(ETag, S3),
+                    
+                    {Expires, S5} = call(expires, S4),
                     S6 = set_expires(Expires, S5),
                     % item 781
                     IfNoneMatch = 
@@ -553,8 +564,10 @@ get_flow(State) ->
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
+                            
+                            S10 = set_content_type(S9),
                             % item 771
-                            finalize(S9)
+                            finalize(S10)
                         end
                     ; false ->
                         % item 769
@@ -564,8 +577,10 @@ get_flow(State) ->
                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                         Ex1 = emx:set_resp_body(Response, Ex),
                         S9 = set_exchange(Ex1, S8),
+                        
+                        S10 = set_content_type(S9),
                         % item 771
-                        finalize(S9)
+                        finalize(S10)
                     end
                 ; false ->
                     % item 770
@@ -575,8 +590,9 @@ get_flow(State) ->
                         respond(412, S3)
                     ; false ->
                         % item 773
-                        {Expires, S4} = call(expires, S3),
-                        S5 = set_etag(ETag, S4),
+                        S4 = set_etag(ETag, S3),
+                        
+                        {Expires, S5} = call(expires, S4),
                         S6 = set_expires(Expires, S5),
                         % item 781
                         IfNoneMatch = 
@@ -596,8 +612,10 @@ get_flow(State) ->
                                 {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                                 Ex1 = emx:set_resp_body(Response, Ex),
                                 S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
                                 % item 771
-                                finalize(S9)
+                                finalize(S10)
                             end
                         ; false ->
                             % item 769
@@ -607,15 +625,18 @@ get_flow(State) ->
                             {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                             Ex1 = emx:set_resp_body(Response, Ex),
                             S9 = set_exchange(Ex1, S8),
+                            
+                            S10 = set_content_type(S9),
                             % item 771
-                            finalize(S9)
+                            finalize(S10)
                         end
                     end
                 end
             ; false ->
                 % item 773
-                {Expires, S4} = call(expires, S3),
-                S5 = set_etag(ETag, S4),
+                S4 = set_etag(ETag, S3),
+                
+                {Expires, S5} = call(expires, S4),
                 S6 = set_expires(Expires, S5),
                 % item 781
                 IfNoneMatch = 
@@ -635,8 +656,10 @@ get_flow(State) ->
                         {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                         Ex1 = emx:set_resp_body(Response, Ex),
                         S9 = set_exchange(Ex1, S8),
+                        
+                        S10 = set_content_type(S9),
                         % item 771
-                        finalize(S9)
+                        finalize(S10)
                     end
                 ; false ->
                     % item 769
@@ -646,8 +669,10 @@ get_flow(State) ->
                     {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
                     Ex1 = emx:set_resp_body(Response, Ex),
                     S9 = set_exchange(Ex1, S8),
+                    
+                    S10 = set_content_type(S9),
                     % item 771
-                    finalize(S9)
+                    finalize(S10)
                 end
             end
         end
@@ -791,8 +816,10 @@ post_flow(State) ->
                                 S8 = encode_body_if_set(S7),
                                 % item 835
                                 case ProcessResult =:= true of true -> 
+                                    % item 1065
+                                    S9 = set_content_type(S8),
                                     % item 834
-                                    finalize(S8)
+                                    finalize(S9)
                                 ; false ->
                                     % item 833
                                     {redirect, Url} = ProcessResult,
@@ -820,8 +847,10 @@ post_flow(State) ->
                                     S8 = encode_body_if_set(S7),
                                     % item 835
                                     case ProcessResult =:= true of true -> 
+                                        % item 1065
+                                        S9 = set_content_type(S8),
                                         % item 834
-                                        finalize(S8)
+                                        finalize(S9)
                                     ; false ->
                                         % item 833
                                         {redirect, Url} = ProcessResult,
@@ -857,8 +886,10 @@ post_flow(State) ->
                             S8 = encode_body_if_set(S7),
                             % item 835
                             case ProcessResult =:= true of true -> 
+                                % item 1065
+                                S9 = set_content_type(S8),
                                 % item 834
-                                finalize(S8)
+                                finalize(S9)
                             ; false ->
                                 % item 833
                                 {redirect, Url} = ProcessResult,
@@ -987,9 +1018,64 @@ set_allowed_methods(AllowedMethods, State) ->
     set_resp_header(<<"Allow">>, HeaderValues, State)
 .
 
+set_content_type(State) ->
+    % item 1064
+    with_exchange(fun(Exchange) ->
+            CType = emx:get_resp_content_type(Exchange),
+            CSet = case emx:get_resp_chosen_charset(Exchange) of
+                undefined -> <<"">>;
+                Cs -> <<"; charset=", Cs/binary>>
+            end,
+            emx:set_resp_header(<<"Content-Type">>, 
+            <<CType/binary, CSet/binary>>, Exchange) 
+        end, State)
+.
+
+set_date_header(Header, Date, State) ->
+    % item 1029
+    case Date =:= undefined of true -> 
+        % item 1032
+        State
+    ; false ->
+        % item 1035
+        case is_binary(Date) of true -> 
+            % item 1038
+            V = Date
+        ; false ->
+            % item 1034
+            V = elli_machine_util:rfc1123_date(Date)
+        end,
+        % item 1033
+        set_resp_header(Header, V, State)
+    end
+.
+
+set_etag(ETag, State) ->
+    % item 1019
+    case ETag =:= undefined of true -> 
+        % item 1022
+        State
+    ; false ->
+        % item 1051
+        ETagValue = encode_etag(ETag),
+        % item 1023
+        set_resp_header(<<"ETag">>, ETagValue, State)
+    end
+.
+
 set_exchange(Exchange, State) ->
     % item 634
     State#machine_flow_state{exchange=Exchange}
+.
+
+set_expires(Expires, State) ->
+    % item 1044
+    set_date_header(<<"Expires">>, Expires, State)
+.
+
+set_last_modified(LastModified, State) ->
+    % item 1050
+    set_date_header(<<"Last-Modified">>, LastModified, State)
 .
 
 set_response_code(Code, State) ->
@@ -1022,22 +1108,12 @@ set_resp_chosen_charset(Charset, State) ->
     Ex = emx:set_resp_chosen_charset(Charset, exchange(State)),
     set_exchange(Ex, State).
     
+set_resp_header(Header, Value, State) ->
+    Ex = emx:set_resp_header(Header, Value, exchange(State)),
+    set_exchange(Ex, State).
 
-set_etag(_Tag, State) ->
-    State.
-
-set_expires(_Expires, State) ->
-    State.
-
-set_last_modified(_LastModified, State) ->
-    State.
-
-set_resp_header(Header, Value, #machine_flow_state{exchange=Ex}=S) ->
-    Ex1 = emx:set_resp_header(Header, Value, Ex),
-    S#machine_flow_state{exchange=Ex1}.
-
-get_resp_header(Header, #machine_flow_state{exchange=Ex}=State) ->
-    {emx:get_resp_header(Header, Ex), State}.
+get_resp_header(Header, State) ->
+    {emx:get_resp_header(Header, exchange(State)), State}.
 
 encode_body_if_set(State) ->
     State.

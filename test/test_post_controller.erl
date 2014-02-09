@@ -26,7 +26,6 @@ process_request(X, Context) ->
 	X1 = emx:set_resp_body(<<"<html><head></head><body>thank-you</body></html>">>, X),
 	{true, X1, Context}.
 
-
 %% 
 %%
 render_error(Code, _Error, ReqData, Context) ->
