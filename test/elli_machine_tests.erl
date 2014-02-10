@@ -101,5 +101,27 @@ last_modified_test() ->
 
     ok.
 
+if_modified_since_test() ->
+    Config = config(),
+
+    %% Wrong date format... ignore...
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
+        {<<"Last-Modified">>, <<"Thu, 01 Apr 2010 10:30:51 GMT">>}], <<"Hello, new world">>}, 
+        elli_test:call('GET', <<"/get/last_modified">>, [{<<"If-Modified-Since">>, <<"yeah">>}], <<>>, Config)),
+
+    %% 
+    ?assertEqual({304, [], <<>>}, 
+        elli_test:call('GET', <<"/get/last_modified">>, 
+            [{<<"If-Modified-Since">>, <<"Thu, 02 Apr 2010 10:30:50 GMT">>}], <<>>, Config)),
+
+    %% Wrong date format should be ignored.
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
+        {<<"Last-Modified">>, <<"Thu, 01 Apr 2010 10:30:51 GMT">>}], <<"Hello, new world">>}, 
+        elli_test:call('GET', <<"/get/last_modified">>, [{<<"If-Modified-Since">>, <<"Thu, 02 Apr 2010 10:30:70 GMT">>}], <<>>, Config)),
+
+    ok.
+
+    
+
 
 

@@ -369,6 +369,31 @@ finalize(State) ->
     end
 .
 
+get_date_header(Header, Req) ->
+    % item 1071
+    D = elli_request:get_header(Header, Req),
+    % item 1072
+    case D =:= undefined of true -> 
+        % item 1075
+        undefined
+    ; false ->
+        % item 1079
+        Date = try elli_machine_http_date:parse(D) of
+                V -> V
+            catch
+                _:_ -> {error, catched}
+        end,
+        % item 1076
+        case element(1, Date) =:= error of true -> 
+            % item 1075
+            undefined
+        ; false ->
+            % item 1081
+            Date
+        end
+    end
+.
+
 get_flow(State) ->
     % item 772
     Req = request(State),
@@ -388,13 +413,12 @@ get_flow(State) ->
                 % item 779
                 case LastModified =/= undefined of true -> 
                     % item 774
-                    IfModifiedSince =
-                        elli_request:get_header(<<"If-Modified-Since">>, Req),
+                    IUS = get_date_header(<<"If-Unmodified-Since">>, Req),
                     % item 759
-                    case IfModifiedSince =:= undefined of true -> 
+                    case IUS =:= undefined of true -> 
                         % item 773
                         S4 = set_etag(ETag, S3),
-                        
+                        % item 1083
                         {Expires, S5} = call(expires, S4),
                         S6 = set_expires(Expires, S5),
                         % item 781
@@ -408,6 +432,96 @@ get_flow(State) ->
                                 % Not Modified
                                 respond(304, S6)
                             ; false ->
+                                % item 1082
+                                IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                                % item 1084
+                                case IMS =/= undefined of true -> 
+                                    % item 1090
+                                    case LastModified =/= undefined of true -> 
+                                        % item 1085
+                                        case LastModified < IMS of true -> 
+                                            % item 767
+                                            % Not Modified
+                                            respond(304, S6)
+                                        ; false ->
+                                            % item 769
+                                            S7 = set_last_modified(LastModified, S6),
+                                            
+                                            Ex = exchange(S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                            Ex1 = emx:set_resp_body(Response, Ex),
+                                            S9 = set_exchange(Ex1, S8),
+                                            
+                                            S10 = set_content_type(S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            end
+                        ; false ->
+                            % item 1082
+                            IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                            % item 1084
+                            case IMS =/= undefined of true -> 
+                                % item 1090
+                                case LastModified =/= undefined of true -> 
+                                    % item 1085
+                                    case LastModified < IMS of true -> 
+                                        % item 767
+                                        % Not Modified
+                                        respond(304, S6)
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
                                 % item 769
                                 S7 = set_last_modified(LastModified, S6),
                                 
@@ -420,29 +534,17 @@ get_flow(State) ->
                                 % item 771
                                 finalize(S10)
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            
-                            S10 = set_content_type(S9),
-                            % item 771
-                            finalize(S10)
                         end
                     ; false ->
                         % item 770
-                        case LastModified > IfModifiedSince of true -> 
+                        case LastModified > IUS of true -> 
                             % item 783
                             % Precondition Failed
                             respond(412, S3)
                         ; false ->
                             % item 773
                             S4 = set_etag(ETag, S3),
-                            
+                            % item 1083
                             {Expires, S5} = call(expires, S4),
                             S6 = set_expires(Expires, S5),
                             % item 781
@@ -452,6 +554,192 @@ get_flow(State) ->
                             case IfNoneMatch =/= undefined of true -> 
                                 % item 768
                                 case match_etag(ETag, IfNoneMatch) of true -> 
+                                    % item 767
+                                    % Not Modified
+                                    respond(304, S6)
+                                ; false ->
+                                    % item 1082
+                                    IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                                    % item 1084
+                                    case IMS =/= undefined of true -> 
+                                        % item 1090
+                                        case LastModified =/= undefined of true -> 
+                                            % item 1085
+                                            case LastModified < IMS of true -> 
+                                                % item 767
+                                                % Not Modified
+                                                respond(304, S6)
+                                            ; false ->
+                                                % item 769
+                                                S7 = set_last_modified(LastModified, S6),
+                                                
+                                                Ex = exchange(S7),
+                                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                                Ex1 = emx:set_resp_body(Response, Ex),
+                                                S9 = set_exchange(Ex1, S8),
+                                                
+                                                S10 = set_content_type(S9),
+                                                % item 771
+                                                finalize(S10)
+                                            end
+                                        ; false ->
+                                            % item 769
+                                            S7 = set_last_modified(LastModified, S6),
+                                            
+                                            Ex = exchange(S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                            Ex1 = emx:set_resp_body(Response, Ex),
+                                            S9 = set_exchange(Ex1, S8),
+                                            
+                                            S10 = set_content_type(S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                end
+                            ; false ->
+                                % item 1082
+                                IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                                % item 1084
+                                case IMS =/= undefined of true -> 
+                                    % item 1090
+                                    case LastModified =/= undefined of true -> 
+                                        % item 1085
+                                        case LastModified < IMS of true -> 
+                                            % item 767
+                                            % Not Modified
+                                            respond(304, S6)
+                                        ; false ->
+                                            % item 769
+                                            S7 = set_last_modified(LastModified, S6),
+                                            
+                                            Ex = exchange(S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                            Ex1 = emx:set_resp_body(Response, Ex),
+                                            S9 = set_exchange(Ex1, S8),
+                                            
+                                            S10 = set_content_type(S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            end
+                        end
+                    end
+                ; false ->
+                    % item 773
+                    S4 = set_etag(ETag, S3),
+                    % item 1083
+                    {Expires, S5} = call(expires, S4),
+                    S6 = set_expires(Expires, S5),
+                    % item 781
+                    IfNoneMatch = 
+                        elli_request:get_header(<<"If-None-Match">>, Req),
+                    % item 1008
+                    case IfNoneMatch =/= undefined of true -> 
+                        % item 768
+                        case match_etag(ETag, IfNoneMatch) of true -> 
+                            % item 767
+                            % Not Modified
+                            respond(304, S6)
+                        ; false ->
+                            % item 1082
+                            IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                            % item 1084
+                            case IMS =/= undefined of true -> 
+                                % item 1090
+                                case LastModified =/= undefined of true -> 
+                                    % item 1085
+                                    case LastModified < IMS of true -> 
+                                        % item 767
+                                        % Not Modified
+                                        respond(304, S6)
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
+                                % item 771
+                                finalize(S10)
+                            end
+                        end
+                    ; false ->
+                        % item 1082
+                        IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                        % item 1084
+                        case IMS =/= undefined of true -> 
+                            % item 1090
+                            case LastModified =/= undefined of true -> 
+                                % item 1085
+                                case LastModified < IMS of true -> 
                                     % item 767
                                     % Not Modified
                                     respond(304, S6)
@@ -481,24 +769,6 @@ get_flow(State) ->
                                 % item 771
                                 finalize(S10)
                             end
-                        end
-                    end
-                ; false ->
-                    % item 773
-                    S4 = set_etag(ETag, S3),
-                    
-                    {Expires, S5} = call(expires, S4),
-                    S6 = set_expires(Expires, S5),
-                    % item 781
-                    IfNoneMatch = 
-                        elli_request:get_header(<<"If-None-Match">>, Req),
-                    % item 1008
-                    case IfNoneMatch =/= undefined of true -> 
-                        % item 768
-                        case match_etag(ETag, IfNoneMatch) of true -> 
-                            % item 767
-                            % Not Modified
-                            respond(304, S6)
                         ; false ->
                             % item 769
                             S7 = set_last_modified(LastModified, S6),
@@ -512,18 +782,6 @@ get_flow(State) ->
                             % item 771
                             finalize(S10)
                         end
-                    ; false ->
-                        % item 769
-                        S7 = set_last_modified(LastModified, S6),
-                        
-                        Ex = exchange(S7),
-                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                        Ex1 = emx:set_resp_body(Response, Ex),
-                        S9 = set_exchange(Ex1, S8),
-                        
-                        S10 = set_content_type(S9),
-                        % item 771
-                        finalize(S10)
                     end
                 end
             ; false ->
@@ -537,13 +795,12 @@ get_flow(State) ->
             % item 779
             case LastModified =/= undefined of true -> 
                 % item 774
-                IfModifiedSince =
-                    elli_request:get_header(<<"If-Modified-Since">>, Req),
+                IUS = get_date_header(<<"If-Unmodified-Since">>, Req),
                 % item 759
-                case IfModifiedSince =:= undefined of true -> 
+                case IUS =:= undefined of true -> 
                     % item 773
                     S4 = set_etag(ETag, S3),
-                    
+                    % item 1083
                     {Expires, S5} = call(expires, S4),
                     S6 = set_expires(Expires, S5),
                     % item 781
@@ -557,6 +814,96 @@ get_flow(State) ->
                             % Not Modified
                             respond(304, S6)
                         ; false ->
+                            % item 1082
+                            IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                            % item 1084
+                            case IMS =/= undefined of true -> 
+                                % item 1090
+                                case LastModified =/= undefined of true -> 
+                                    % item 1085
+                                    case LastModified < IMS of true -> 
+                                        % item 767
+                                        % Not Modified
+                                        respond(304, S6)
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
+                                % item 771
+                                finalize(S10)
+                            end
+                        end
+                    ; false ->
+                        % item 1082
+                        IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                        % item 1084
+                        case IMS =/= undefined of true -> 
+                            % item 1090
+                            case LastModified =/= undefined of true -> 
+                                % item 1085
+                                case LastModified < IMS of true -> 
+                                    % item 767
+                                    % Not Modified
+                                    respond(304, S6)
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
+                                % item 771
+                                finalize(S10)
+                            end
+                        ; false ->
                             % item 769
                             S7 = set_last_modified(LastModified, S6),
                             
@@ -569,29 +916,17 @@ get_flow(State) ->
                             % item 771
                             finalize(S10)
                         end
-                    ; false ->
-                        % item 769
-                        S7 = set_last_modified(LastModified, S6),
-                        
-                        Ex = exchange(S7),
-                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                        Ex1 = emx:set_resp_body(Response, Ex),
-                        S9 = set_exchange(Ex1, S8),
-                        
-                        S10 = set_content_type(S9),
-                        % item 771
-                        finalize(S10)
                     end
                 ; false ->
                     % item 770
-                    case LastModified > IfModifiedSince of true -> 
+                    case LastModified > IUS of true -> 
                         % item 783
                         % Precondition Failed
                         respond(412, S3)
                     ; false ->
                         % item 773
                         S4 = set_etag(ETag, S3),
-                        
+                        % item 1083
                         {Expires, S5} = call(expires, S4),
                         S6 = set_expires(Expires, S5),
                         % item 781
@@ -601,6 +936,192 @@ get_flow(State) ->
                         case IfNoneMatch =/= undefined of true -> 
                             % item 768
                             case match_etag(ETag, IfNoneMatch) of true -> 
+                                % item 767
+                                % Not Modified
+                                respond(304, S6)
+                            ; false ->
+                                % item 1082
+                                IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                                % item 1084
+                                case IMS =/= undefined of true -> 
+                                    % item 1090
+                                    case LastModified =/= undefined of true -> 
+                                        % item 1085
+                                        case LastModified < IMS of true -> 
+                                            % item 767
+                                            % Not Modified
+                                            respond(304, S6)
+                                        ; false ->
+                                            % item 769
+                                            S7 = set_last_modified(LastModified, S6),
+                                            
+                                            Ex = exchange(S7),
+                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                            Ex1 = emx:set_resp_body(Response, Ex),
+                                            S9 = set_exchange(Ex1, S8),
+                                            
+                                            S10 = set_content_type(S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            end
+                        ; false ->
+                            % item 1082
+                            IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                            % item 1084
+                            case IMS =/= undefined of true -> 
+                                % item 1090
+                                case LastModified =/= undefined of true -> 
+                                    % item 1085
+                                    case LastModified < IMS of true -> 
+                                        % item 767
+                                        % Not Modified
+                                        respond(304, S6)
+                                    ; false ->
+                                        % item 769
+                                        S7 = set_last_modified(LastModified, S6),
+                                        
+                                        Ex = exchange(S7),
+                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                        Ex1 = emx:set_resp_body(Response, Ex),
+                                        S9 = set_exchange(Ex1, S8),
+                                        
+                                        S10 = set_content_type(S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
+                                % item 771
+                                finalize(S10)
+                            end
+                        end
+                    end
+                end
+            ; false ->
+                % item 773
+                S4 = set_etag(ETag, S3),
+                % item 1083
+                {Expires, S5} = call(expires, S4),
+                S6 = set_expires(Expires, S5),
+                % item 781
+                IfNoneMatch = 
+                    elli_request:get_header(<<"If-None-Match">>, Req),
+                % item 1008
+                case IfNoneMatch =/= undefined of true -> 
+                    % item 768
+                    case match_etag(ETag, IfNoneMatch) of true -> 
+                        % item 767
+                        % Not Modified
+                        respond(304, S6)
+                    ; false ->
+                        % item 1082
+                        IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                        % item 1084
+                        case IMS =/= undefined of true -> 
+                            % item 1090
+                            case LastModified =/= undefined of true -> 
+                                % item 1085
+                                case LastModified < IMS of true -> 
+                                    % item 767
+                                    % Not Modified
+                                    respond(304, S6)
+                                ; false ->
+                                    % item 769
+                                    S7 = set_last_modified(LastModified, S6),
+                                    
+                                    Ex = exchange(S7),
+                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                    Ex1 = emx:set_resp_body(Response, Ex),
+                                    S9 = set_exchange(Ex1, S8),
+                                    
+                                    S10 = set_content_type(S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            ; false ->
+                                % item 769
+                                S7 = set_last_modified(LastModified, S6),
+                                
+                                Ex = exchange(S7),
+                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                                Ex1 = emx:set_resp_body(Response, Ex),
+                                S9 = set_exchange(Ex1, S8),
+                                
+                                S10 = set_content_type(S9),
+                                % item 771
+                                finalize(S10)
+                            end
+                        ; false ->
+                            % item 769
+                            S7 = set_last_modified(LastModified, S6),
+                            
+                            Ex = exchange(S7),
+                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
+                            Ex1 = emx:set_resp_body(Response, Ex),
+                            S9 = set_exchange(Ex1, S8),
+                            
+                            S10 = set_content_type(S9),
+                            % item 771
+                            finalize(S10)
+                        end
+                    end
+                ; false ->
+                    % item 1082
+                    IMS = get_date_header(<<"If-Modified-Since">>, Req),
+                    % item 1084
+                    case IMS =/= undefined of true -> 
+                        % item 1090
+                        case LastModified =/= undefined of true -> 
+                            % item 1085
+                            case LastModified < IMS of true -> 
                                 % item 767
                                 % Not Modified
                                 respond(304, S6)
@@ -630,24 +1151,6 @@ get_flow(State) ->
                             % item 771
                             finalize(S10)
                         end
-                    end
-                end
-            ; false ->
-                % item 773
-                S4 = set_etag(ETag, S3),
-                
-                {Expires, S5} = call(expires, S4),
-                S6 = set_expires(Expires, S5),
-                % item 781
-                IfNoneMatch = 
-                    elli_request:get_header(<<"If-None-Match">>, Req),
-                % item 1008
-                case IfNoneMatch =/= undefined of true -> 
-                    % item 768
-                    case match_etag(ETag, IfNoneMatch) of true -> 
-                        % item 767
-                        % Not Modified
-                        respond(304, S6)
                     ; false ->
                         % item 769
                         S7 = set_last_modified(LastModified, S6),
@@ -661,18 +1164,6 @@ get_flow(State) ->
                         % item 771
                         finalize(S10)
                     end
-                ; false ->
-                    % item 769
-                    S7 = set_last_modified(LastModified, S6),
-                    
-                    Ex = exchange(S7),
-                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                    Ex1 = emx:set_resp_body(Response, Ex),
-                    S9 = set_exchange(Ex1, S8),
-                    
-                    S10 = set_content_type(S9),
-                    % item 771
-                    finalize(S10)
                 end
             end
         end
