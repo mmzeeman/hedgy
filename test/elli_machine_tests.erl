@@ -33,7 +33,7 @@ not_found_test() ->
     ok.
 
 post_test() ->
- 	Config = config(),
+    Config = config(),
     ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}], 
             <<"<html><head></head><body>thank-you</body></html>">>},
         elli_test:call('POST', <<"/post">>, [{<<"Host">>, <<"example.com">>}], <<"x=y;">>, Config)),
@@ -75,7 +75,6 @@ get_error_test() ->
 
 get_etag_test() ->
     Config = config(),
-
     %% Test if the etag is added.
     ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"ETag">>, <<"\"example-tag\"">>}], 
         <<"Hello, new world">>}, 

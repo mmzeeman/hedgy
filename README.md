@@ -123,6 +123,21 @@ capturing requirements and building software that controls spacecraft.
 
 The rules of DRAKON are optimized to ensure easy understanding by human beings. More information: http://drakon-editor.sourceforge.net
 
+Here are the DRAKON diagrams:
+
+**Handle a request**
+
 ![Handle Request Diagram](doc/handle_request.png "Handling a request")
-![Get Flow](doc/get_flow.png "Handling the GET part")
+
+**Initialize a request**
+
+![Handle Request Diagram](doc/do_request.png "Handling a request")
+
+**GET and HEAD request**
+
+![GET Flow](doc/get_flow.png "Handling the GET request")
+
+**POST request**
+
+![POST Flow](doc/post_flow.png "Handling a POST request")
 
