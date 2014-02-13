@@ -122,17 +122,25 @@ accept_language(State) ->
 .
 
 call(Name, State) ->
-    % item 616
-    Result = {Answer, S1} = elli_machine_controller:call(Name, State),
-    case Answer of
-        {error, _}=E ->
-            throw({not_implemented, E});
-        {error, _, _}=E ->
-            throw({not_implemented, E});
-        {halt, _Code}=Halt ->
-            throw({Halt, S1}); 
-        _ ->
+    % item 1110
+    Result = elli_machine_controller:call(Name, State),
+    % item 1111
+    {Answer, S1} = Result,
+    % item 1126
+    case is_tuple(Answer) of true -> 
+        % item 1130
+        Type = element(1, Answer),
+        % item 1131
+        case (Type =:= halt) orelse (Type =:= error) of true -> 
+            % item 1122
+            throw({Answer, S1})
+        ; false ->
+            % item 1129
             Result
+        end
+    ; false ->
+        % item 1129
+        Result
     end
 .
 
@@ -346,10 +354,8 @@ exchange(State) ->
 .
 
 finalize(State) ->
-    % item 296
-    HasRespBody = has_resp_body(State),
     % item 171
-    case HasRespBody of true -> 
+    case has_resp_body(State) of true -> 
         % item 189
         {MultipleChoices, S1} = call(multiple_choices, State),
         % item 174
@@ -370,25 +376,25 @@ finalize(State) ->
 .
 
 get_date_header(Header, Req) ->
-    % item 1071
+    % item 1097
     D = elli_request:get_header(Header, Req),
-    % item 1072
+    % item 1098
     case D =:= undefined of true -> 
-        % item 1075
+        % item 1101
         undefined
     ; false ->
-        % item 1079
+        % item 1103
         Date = try elli_machine_http_date:parse(D) of
                 V -> V
             catch
                 _:_ -> {error, catched}
         end,
-        % item 1076
+        % item 1102
         case element(1, Date) =:= error of true -> 
-            % item 1075
+            % item 1101
             undefined
         ; false ->
-            % item 1081
+            % item 1104
             Date
         end
     end
@@ -1234,6 +1240,11 @@ handle_request(State) ->
 has_resp_body(State) ->
     % item 652
     emx:has_resp_body(exchange(State))
+.
+
+is_range_ok(State) ->
+    % item 1151
+    emx:is_range_ok(exchange(State))
 .
 
 match_etag(ETag, HeaderVal) ->

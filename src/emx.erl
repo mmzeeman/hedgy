@@ -56,6 +56,7 @@
     get_resp_body/1,
 
     has_resp_body/1,
+    is_range_ok/1,
 
     set_metadata/3,
     get_metadata/2
@@ -142,6 +143,10 @@ has_resp_body(#machine_exchange{resp_body= <<>>}) ->
     false;
 has_resp_body(_) ->
     true.
+
+% @doc Return true if this request is allowed to return 206 partial content
+is_range_ok(#machine_exchange{resp_is_range_ok=RangeOk}) ->
+    RangeOk.
 
 set_resp_content_type(Val, Exchange) ->
     Exchange#machine_exchange{content_type=Val}.
