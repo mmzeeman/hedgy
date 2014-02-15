@@ -9,8 +9,7 @@
     resp_code = undefined :: undefined | non_neg_integer(),
     resp_headers = [],
     resp_body = <<>> :: binary() | iolist(),
-    resp_is_range_ok = true :: boolean(),
-
+    
     %% Request Metadata needed during handling the request.
     %%
     host :: undefined | binary(),
