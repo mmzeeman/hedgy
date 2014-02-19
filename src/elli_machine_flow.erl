@@ -10,7 +10,9 @@
 -include("elli_machine.hrl").
 -include("elli_machine_internal.hrl").
 
-
+-ifdef(TEST).
+-compile(export_all).
+-endif.
 
 
 accept_charset(State) ->
@@ -144,6 +146,39 @@ call(Name, State) ->
     end
 .
 
+can_range(ETag, LastModified, IfRange) ->
+    % item 1171
+    case IfRange =:= undefined of true -> 
+        % item 1173
+        true
+    ; false ->
+        % item 1200
+        case is_etag(IfRange) of true -> 
+            % item 1188
+            ETags = elli_machine_util:split_quoted_strings(IfRange),
+            % item 1189
+            lists:member(ETag, ETags)
+        ; false ->
+            % item 1193
+            case LastModified =:= undefined of true -> 
+                % item 1168
+                false
+            ; false ->
+                % item 1187
+                Date = parse_http_date(IfRange),
+                % item 1190
+                case element(1, Date) =:= error of true -> 
+                    % item 1168
+                    false
+                ; false ->
+                    % item 1194
+                    LastModified < Date
+                end
+            end
+        end
+    end
+.
+
 content_negotiation(State) ->
     % item 932
     {ContentTypeAccepted, ContentTypesAvailable, S1} =
@@ -269,7 +304,7 @@ do_request(State) ->
                                             % item 2530001
                                             case (Method =:= 'GET') orelse (Method =:= 'HEAD') of true -> 
                                                 % item 264
-                                                get_flow(S9)
+                                                get_flow(Method, S9)
                                             ; false ->
                                                 % item 2530003
                                                 case Method =:= 'POST' of true -> 
@@ -377,18 +412,14 @@ finalize(State) ->
 
 get_date_header(Header, Req) ->
     % item 1097
-    D = elli_request:get_header(Header, Req),
+    HeaderVal = elli_request:get_header(Header, Req),
     % item 1098
-    case D =:= undefined of true -> 
+    case HeaderVal =:= undefined of true -> 
         % item 1101
         undefined
     ; false ->
         % item 1103
-        Date = try elli_machine_http_date:parse(D) of
-                V -> V
-            catch
-                _:_ -> {error, catched}
-        end,
+        Date = parse_http_date(HeaderVal),
         % item 1102
         case element(1, Date) =:= error of true -> 
             % item 1101
@@ -400,7 +431,7 @@ get_date_header(Header, Req) ->
     end
 .
 
-get_flow(State) ->
+get_flow(Method, State) ->
     % item 772
     Req = request(State),
     {ResourceExists, S1} = call(resource_exists, State),
@@ -450,43 +481,76 @@ get_flow(State) ->
                                             % Not Modified
                                             respond(304, S6)
                                         ; false ->
-                                            % item 769
+                                            % item 1152
                                             S7 = set_last_modified(LastModified, S6),
-                                            
-                                            Ex = exchange(S7),
-                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                            Ex1 = emx:set_resp_body(Response, Ex),
-                                            S9 = set_exchange(Ex1, S8),
-                                            
-                                            S10 = set_content_type(S9),
+                                            % item 1153
+                                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                            {Response, S8} = call(RespFun, S7),
+                                            % item 1157
+                                            S9 = set_content_type(S8),
+                                            % item 1154
+                                            case Method =:= 'HEAD' of true -> 
+                                                % item 1158
+                                                error(not_implemented)
+                                            ; false ->
+                                                % item 1159
+                                                _CanRange = can_range(ETag, LastModified, 
+                                                    get_header(<<"If-Range">>, S9, undefined)),
+                                                % item 769
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_body(Response, Ex)
+                                                end, S9),
+                                                % item 771
+                                                finalize(S10)
+                                            end
+                                        end
+                                    ; false ->
+                                        % item 1152
+                                        S7 = set_last_modified(LastModified, S6),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
                                             % item 771
                                             finalize(S10)
                                         end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
                                     ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
                                         % item 769
-                                        S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
-                                ; false ->
-                                    % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
-                                    % item 771
-                                    finalize(S10)
                                 end
                             end
                         ; false ->
@@ -502,43 +566,76 @@ get_flow(State) ->
                                         % Not Modified
                                         respond(304, S6)
                                     ; false ->
-                                        % item 769
+                                        % item 1152
                                         S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
                                 ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
                                     % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
-                                % item 771
-                                finalize(S10)
                             end
                         end
                     ; false ->
@@ -576,43 +673,76 @@ get_flow(State) ->
                                                 % Not Modified
                                                 respond(304, S6)
                                             ; false ->
-                                                % item 769
+                                                % item 1152
                                                 S7 = set_last_modified(LastModified, S6),
-                                                
-                                                Ex = exchange(S7),
-                                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                                Ex1 = emx:set_resp_body(Response, Ex),
-                                                S9 = set_exchange(Ex1, S8),
-                                                
-                                                S10 = set_content_type(S9),
+                                                % item 1153
+                                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                                {Response, S8} = call(RespFun, S7),
+                                                % item 1157
+                                                S9 = set_content_type(S8),
+                                                % item 1154
+                                                case Method =:= 'HEAD' of true -> 
+                                                    % item 1158
+                                                    error(not_implemented)
+                                                ; false ->
+                                                    % item 1159
+                                                    _CanRange = can_range(ETag, LastModified, 
+                                                        get_header(<<"If-Range">>, S9, undefined)),
+                                                    % item 769
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_body(Response, Ex)
+                                                    end, S9),
+                                                    % item 771
+                                                    finalize(S10)
+                                                end
+                                            end
+                                        ; false ->
+                                            % item 1152
+                                            S7 = set_last_modified(LastModified, S6),
+                                            % item 1153
+                                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                            {Response, S8} = call(RespFun, S7),
+                                            % item 1157
+                                            S9 = set_content_type(S8),
+                                            % item 1154
+                                            case Method =:= 'HEAD' of true -> 
+                                                % item 1158
+                                                error(not_implemented)
+                                            ; false ->
+                                                % item 1159
+                                                _CanRange = can_range(ETag, LastModified, 
+                                                    get_header(<<"If-Range">>, S9, undefined)),
+                                                % item 769
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_body(Response, Ex)
+                                                end, S9),
                                                 % item 771
                                                 finalize(S10)
                                             end
+                                        end
+                                    ; false ->
+                                        % item 1152
+                                        S7 = set_last_modified(LastModified, S6),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
                                         ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
                                             % item 769
-                                            S7 = set_last_modified(LastModified, S6),
-                                            
-                                            Ex = exchange(S7),
-                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                            Ex1 = emx:set_resp_body(Response, Ex),
-                                            S9 = set_exchange(Ex1, S8),
-                                            
-                                            S10 = set_content_type(S9),
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
                                             % item 771
                                             finalize(S10)
                                         end
-                                    ; false ->
-                                        % item 769
-                                        S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
-                                        % item 771
-                                        finalize(S10)
                                     end
                                 end
                             ; false ->
@@ -628,43 +758,76 @@ get_flow(State) ->
                                             % Not Modified
                                             respond(304, S6)
                                         ; false ->
-                                            % item 769
+                                            % item 1152
                                             S7 = set_last_modified(LastModified, S6),
-                                            
-                                            Ex = exchange(S7),
-                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                            Ex1 = emx:set_resp_body(Response, Ex),
-                                            S9 = set_exchange(Ex1, S8),
-                                            
-                                            S10 = set_content_type(S9),
+                                            % item 1153
+                                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                            {Response, S8} = call(RespFun, S7),
+                                            % item 1157
+                                            S9 = set_content_type(S8),
+                                            % item 1154
+                                            case Method =:= 'HEAD' of true -> 
+                                                % item 1158
+                                                error(not_implemented)
+                                            ; false ->
+                                                % item 1159
+                                                _CanRange = can_range(ETag, LastModified, 
+                                                    get_header(<<"If-Range">>, S9, undefined)),
+                                                % item 769
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_body(Response, Ex)
+                                                end, S9),
+                                                % item 771
+                                                finalize(S10)
+                                            end
+                                        end
+                                    ; false ->
+                                        % item 1152
+                                        S7 = set_last_modified(LastModified, S6),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
                                             % item 771
                                             finalize(S10)
                                         end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
                                     ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
                                         % item 769
-                                        S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
-                                ; false ->
-                                    % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
-                                    % item 771
-                                    finalize(S10)
                                 end
                             end
                         end
@@ -698,43 +861,76 @@ get_flow(State) ->
                                         % Not Modified
                                         respond(304, S6)
                                     ; false ->
-                                        % item 769
+                                        % item 1152
                                         S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
                                 ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
                                     % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
-                                % item 771
-                                finalize(S10)
                             end
                         end
                     ; false ->
@@ -750,43 +946,76 @@ get_flow(State) ->
                                     % Not Modified
                                     respond(304, S6)
                                 ; false ->
-                                    % item 769
+                                    % item 1152
                                     S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
+                                ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
+                                    % item 769
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
+                            end
+                        ; false ->
+                            % item 1152
+                            S7 = set_last_modified(LastModified, S6),
+                            % item 1153
+                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                            {Response, S8} = call(RespFun, S7),
+                            % item 1157
+                            S9 = set_content_type(S8),
+                            % item 1154
+                            case Method =:= 'HEAD' of true -> 
+                                % item 1158
+                                error(not_implemented)
                             ; false ->
+                                % item 1159
+                                _CanRange = can_range(ETag, LastModified, 
+                                    get_header(<<"If-Range">>, S9, undefined)),
                                 % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
+                                S10 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S9),
                                 % item 771
                                 finalize(S10)
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            
-                            S10 = set_content_type(S9),
-                            % item 771
-                            finalize(S10)
                         end
                     end
                 end
@@ -832,43 +1061,76 @@ get_flow(State) ->
                                         % Not Modified
                                         respond(304, S6)
                                     ; false ->
-                                        % item 769
+                                        % item 1152
                                         S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
                                 ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
                                     % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
-                                % item 771
-                                finalize(S10)
                             end
                         end
                     ; false ->
@@ -884,43 +1146,76 @@ get_flow(State) ->
                                     % Not Modified
                                     respond(304, S6)
                                 ; false ->
-                                    % item 769
+                                    % item 1152
                                     S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
+                                ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
+                                    % item 769
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
+                            end
+                        ; false ->
+                            % item 1152
+                            S7 = set_last_modified(LastModified, S6),
+                            % item 1153
+                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                            {Response, S8} = call(RespFun, S7),
+                            % item 1157
+                            S9 = set_content_type(S8),
+                            % item 1154
+                            case Method =:= 'HEAD' of true -> 
+                                % item 1158
+                                error(not_implemented)
                             ; false ->
+                                % item 1159
+                                _CanRange = can_range(ETag, LastModified, 
+                                    get_header(<<"If-Range">>, S9, undefined)),
                                 % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
+                                S10 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S9),
                                 % item 771
                                 finalize(S10)
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            
-                            S10 = set_content_type(S9),
-                            % item 771
-                            finalize(S10)
                         end
                     end
                 ; false ->
@@ -958,43 +1253,76 @@ get_flow(State) ->
                                             % Not Modified
                                             respond(304, S6)
                                         ; false ->
-                                            % item 769
+                                            % item 1152
                                             S7 = set_last_modified(LastModified, S6),
-                                            
-                                            Ex = exchange(S7),
-                                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                            Ex1 = emx:set_resp_body(Response, Ex),
-                                            S9 = set_exchange(Ex1, S8),
-                                            
-                                            S10 = set_content_type(S9),
+                                            % item 1153
+                                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                            {Response, S8} = call(RespFun, S7),
+                                            % item 1157
+                                            S9 = set_content_type(S8),
+                                            % item 1154
+                                            case Method =:= 'HEAD' of true -> 
+                                                % item 1158
+                                                error(not_implemented)
+                                            ; false ->
+                                                % item 1159
+                                                _CanRange = can_range(ETag, LastModified, 
+                                                    get_header(<<"If-Range">>, S9, undefined)),
+                                                % item 769
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_body(Response, Ex)
+                                                end, S9),
+                                                % item 771
+                                                finalize(S10)
+                                            end
+                                        end
+                                    ; false ->
+                                        % item 1152
+                                        S7 = set_last_modified(LastModified, S6),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
                                             % item 771
                                             finalize(S10)
                                         end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
                                     ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
                                         % item 769
-                                        S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
-                                ; false ->
-                                    % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
-                                    % item 771
-                                    finalize(S10)
                                 end
                             end
                         ; false ->
@@ -1010,43 +1338,76 @@ get_flow(State) ->
                                         % Not Modified
                                         respond(304, S6)
                                     ; false ->
-                                        % item 769
+                                        % item 1152
                                         S7 = set_last_modified(LastModified, S6),
-                                        
-                                        Ex = exchange(S7),
-                                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                        Ex1 = emx:set_resp_body(Response, Ex),
-                                        S9 = set_exchange(Ex1, S8),
-                                        
-                                        S10 = set_content_type(S9),
+                                        % item 1153
+                                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                        {Response, S8} = call(RespFun, S7),
+                                        % item 1157
+                                        S9 = set_content_type(S8),
+                                        % item 1154
+                                        case Method =:= 'HEAD' of true -> 
+                                            % item 1158
+                                            error(not_implemented)
+                                        ; false ->
+                                            % item 1159
+                                            _CanRange = can_range(ETag, LastModified, 
+                                                get_header(<<"If-Range">>, S9, undefined)),
+                                            % item 769
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S9),
+                                            % item 771
+                                            finalize(S10)
+                                        end
+                                    end
+                                ; false ->
+                                    % item 1152
+                                    S7 = set_last_modified(LastModified, S6),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
                                         % item 771
                                         finalize(S10)
                                     end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
                                 ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
                                     % item 769
-                                    S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
-                            ; false ->
-                                % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
-                                % item 771
-                                finalize(S10)
                             end
                         end
                     end
@@ -1080,43 +1441,76 @@ get_flow(State) ->
                                     % Not Modified
                                     respond(304, S6)
                                 ; false ->
-                                    % item 769
+                                    % item 1152
                                     S7 = set_last_modified(LastModified, S6),
-                                    
-                                    Ex = exchange(S7),
-                                    {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                    Ex1 = emx:set_resp_body(Response, Ex),
-                                    S9 = set_exchange(Ex1, S8),
-                                    
-                                    S10 = set_content_type(S9),
+                                    % item 1153
+                                    RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                    {Response, S8} = call(RespFun, S7),
+                                    % item 1157
+                                    S9 = set_content_type(S8),
+                                    % item 1154
+                                    case Method =:= 'HEAD' of true -> 
+                                        % item 1158
+                                        error(not_implemented)
+                                    ; false ->
+                                        % item 1159
+                                        _CanRange = can_range(ETag, LastModified, 
+                                            get_header(<<"If-Range">>, S9, undefined)),
+                                        % item 769
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S9),
+                                        % item 771
+                                        finalize(S10)
+                                    end
+                                end
+                            ; false ->
+                                % item 1152
+                                S7 = set_last_modified(LastModified, S6),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
+                                ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
+                                    % item 769
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
                                     % item 771
                                     finalize(S10)
                                 end
+                            end
+                        ; false ->
+                            % item 1152
+                            S7 = set_last_modified(LastModified, S6),
+                            % item 1153
+                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                            {Response, S8} = call(RespFun, S7),
+                            % item 1157
+                            S9 = set_content_type(S8),
+                            % item 1154
+                            case Method =:= 'HEAD' of true -> 
+                                % item 1158
+                                error(not_implemented)
                             ; false ->
+                                % item 1159
+                                _CanRange = can_range(ETag, LastModified, 
+                                    get_header(<<"If-Range">>, S9, undefined)),
                                 % item 769
-                                S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
+                                S10 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S9),
                                 % item 771
                                 finalize(S10)
                             end
-                        ; false ->
-                            % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            
-                            S10 = set_content_type(S9),
-                            % item 771
-                            finalize(S10)
                         end
                     end
                 ; false ->
@@ -1132,43 +1526,76 @@ get_flow(State) ->
                                 % Not Modified
                                 respond(304, S6)
                             ; false ->
-                                % item 769
+                                % item 1152
                                 S7 = set_last_modified(LastModified, S6),
-                                
-                                Ex = exchange(S7),
-                                {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                                Ex1 = emx:set_resp_body(Response, Ex),
-                                S9 = set_exchange(Ex1, S8),
-                                
-                                S10 = set_content_type(S9),
+                                % item 1153
+                                RespFun = emx:get_resp_content_fun(exchange(S7)),
+                                {Response, S8} = call(RespFun, S7),
+                                % item 1157
+                                S9 = set_content_type(S8),
+                                % item 1154
+                                case Method =:= 'HEAD' of true -> 
+                                    % item 1158
+                                    error(not_implemented)
+                                ; false ->
+                                    % item 1159
+                                    _CanRange = can_range(ETag, LastModified, 
+                                        get_header(<<"If-Range">>, S9, undefined)),
+                                    % item 769
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S9),
+                                    % item 771
+                                    finalize(S10)
+                                end
+                            end
+                        ; false ->
+                            % item 1152
+                            S7 = set_last_modified(LastModified, S6),
+                            % item 1153
+                            RespFun = emx:get_resp_content_fun(exchange(S7)),
+                            {Response, S8} = call(RespFun, S7),
+                            % item 1157
+                            S9 = set_content_type(S8),
+                            % item 1154
+                            case Method =:= 'HEAD' of true -> 
+                                % item 1158
+                                error(not_implemented)
+                            ; false ->
+                                % item 1159
+                                _CanRange = can_range(ETag, LastModified, 
+                                    get_header(<<"If-Range">>, S9, undefined)),
+                                % item 769
+                                S10 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S9),
                                 % item 771
                                 finalize(S10)
                             end
+                        end
+                    ; false ->
+                        % item 1152
+                        S7 = set_last_modified(LastModified, S6),
+                        % item 1153
+                        RespFun = emx:get_resp_content_fun(exchange(S7)),
+                        {Response, S8} = call(RespFun, S7),
+                        % item 1157
+                        S9 = set_content_type(S8),
+                        % item 1154
+                        case Method =:= 'HEAD' of true -> 
+                            % item 1158
+                            error(not_implemented)
                         ; false ->
+                            % item 1159
+                            _CanRange = can_range(ETag, LastModified, 
+                                get_header(<<"If-Range">>, S9, undefined)),
                             % item 769
-                            S7 = set_last_modified(LastModified, S6),
-                            
-                            Ex = exchange(S7),
-                            {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                            Ex1 = emx:set_resp_body(Response, Ex),
-                            S9 = set_exchange(Ex1, S8),
-                            
-                            S10 = set_content_type(S9),
+                            S10 = with_exchange(fun(Ex) ->
+                                emx:set_resp_body(Response, Ex)
+                            end, S9),
                             % item 771
                             finalize(S10)
                         end
-                    ; false ->
-                        % item 769
-                        S7 = set_last_modified(LastModified, S6),
-                        
-                        Ex = exchange(S7),
-                        {Response, S8} = call(emx:get_resp_content_fun(Ex), S7),
-                        Ex1 = emx:set_resp_body(Response, Ex),
-                        S9 = set_exchange(Ex1, S8),
-                        
-                        S10 = set_content_type(S9),
-                        % item 771
-                        finalize(S10)
                     end
                 end
             end
@@ -1242,9 +1669,17 @@ has_resp_body(State) ->
     emx:has_resp_body(exchange(State))
 .
 
-is_range_ok(State) ->
-    % item 1151
-    emx:is_range_ok(exchange(State))
+is_etag(Header) ->
+    % item 1203
+    First = binary:first(Header),
+    % item 1204
+    case ((First =:= $") orelse (First =:= $w)) orelse (First =:= $W) of true -> 
+        % item 1210
+        true
+    ; false ->
+        % item 1207
+        false
+    end
 .
 
 match_etag(ETag, HeaderVal) ->
@@ -1269,6 +1704,15 @@ options_flow(State) ->
     % item 985
     % Ok
     respond(200, S2)
+.
+
+parse_http_date(Value) ->
+    % item 1179
+    Date = try elli_machine_http_date:parse(Value) of
+            V -> V
+        catch
+            _:_ -> {error, catched}
+    end
 .
 
 post_flow(State) ->

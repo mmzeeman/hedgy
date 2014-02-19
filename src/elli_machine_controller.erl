@@ -129,6 +129,9 @@ default(content_encodings_provided) ->
 default(transfer_encodings_provided) ->
     [{<<"gzip">>, fun(X) -> zlib:gzip(X) end}];
 
+default(accept_ranges) ->
+    bytes;
+
 default(variances) -> [];
 default(is_conflict) -> false;
 default(multiple_choices) -> false;
