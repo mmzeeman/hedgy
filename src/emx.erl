@@ -55,6 +55,8 @@
     set_resp_body/2,
     get_resp_body/1,
 
+    set_resp_range/2,
+
     has_resp_body/1,
 
     set_metadata/3,
@@ -160,6 +162,11 @@ set_resp_chosen_charset(Val, Exchange) ->
 
 get_resp_chosen_charset(Exchange) ->
     Exchange#machine_exchange.chosen_charset.
+
+set_resp_range(Range, Exchange) ->
+    Exchange#machine_exchange{range=Range}.
+
+
 
 
 % @doc Sets metadata

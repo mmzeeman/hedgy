@@ -490,19 +490,35 @@ get_flow(Method, State) ->
                                             S9 = set_content_type(S8),
                                             % item 1154
                                             case Method =:= 'HEAD' of true -> 
-                                                % item 1158
-                                                error(not_implemented)
+                                                % item 1238
+                                                S10 = S9
                                             ; false ->
-                                                % item 1159
-                                                _CanRange = can_range(ETag, LastModified, 
-                                                    get_header(<<"If-Range">>, S9, undefined)),
-                                                % item 769
-                                                S10 = with_exchange(fun(Ex) ->
-                                                    emx:set_resp_body(Response, Ex)
-                                                end, S9),
-                                                % item 771
-                                                finalize(S10)
-                                            end
+                                                % item 1217
+                                                Range = get_range(Req),
+                                                % item 1229
+                                                case Range =:= [] of true -> 
+                                                    % item 1236
+                                                    S10 = S9
+                                                ; false ->
+                                                    % item 1231
+                                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                        % item 1232
+                                                        S10 = with_exchange(fun(Ex) ->
+                                                            emx:set_resp_range(Range, Ex)
+                                                        end, S9)
+                                                    ; false ->
+                                                        % item 1236
+                                                        S10 = S9
+                                                    end
+                                                end
+                                            end,
+                                            % item 769
+                                            S11 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S10),
+                                            % item 771
+                                            finalize(S11)
                                         end
                                     ; false ->
                                         % item 1152
@@ -514,19 +530,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -538,19 +570,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             end
                         ; false ->
@@ -575,19 +623,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -599,19 +663,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -623,19 +703,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         end
                     ; false ->
@@ -682,19 +778,35 @@ get_flow(Method, State) ->
                                                 S9 = set_content_type(S8),
                                                 % item 1154
                                                 case Method =:= 'HEAD' of true -> 
-                                                    % item 1158
-                                                    error(not_implemented)
+                                                    % item 1238
+                                                    S10 = S9
                                                 ; false ->
-                                                    % item 1159
-                                                    _CanRange = can_range(ETag, LastModified, 
-                                                        get_header(<<"If-Range">>, S9, undefined)),
-                                                    % item 769
-                                                    S10 = with_exchange(fun(Ex) ->
-                                                        emx:set_resp_body(Response, Ex)
-                                                    end, S9),
-                                                    % item 771
-                                                    finalize(S10)
-                                                end
+                                                    % item 1217
+                                                    Range = get_range(Req),
+                                                    % item 1229
+                                                    case Range =:= [] of true -> 
+                                                        % item 1236
+                                                        S10 = S9
+                                                    ; false ->
+                                                        % item 1231
+                                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                            % item 1232
+                                                            S10 = with_exchange(fun(Ex) ->
+                                                                emx:set_resp_range(Range, Ex)
+                                                            end, S9)
+                                                        ; false ->
+                                                            % item 1236
+                                                            S10 = S9
+                                                        end
+                                                    end
+                                                end,
+                                                % item 769
+                                                S11 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_body(Response, Ex)
+                                                end, S10),
+                                                % item 771
+                                                finalize(S11)
                                             end
                                         ; false ->
                                             % item 1152
@@ -706,19 +818,35 @@ get_flow(Method, State) ->
                                             S9 = set_content_type(S8),
                                             % item 1154
                                             case Method =:= 'HEAD' of true -> 
-                                                % item 1158
-                                                error(not_implemented)
+                                                % item 1238
+                                                S10 = S9
                                             ; false ->
-                                                % item 1159
-                                                _CanRange = can_range(ETag, LastModified, 
-                                                    get_header(<<"If-Range">>, S9, undefined)),
-                                                % item 769
-                                                S10 = with_exchange(fun(Ex) ->
-                                                    emx:set_resp_body(Response, Ex)
-                                                end, S9),
-                                                % item 771
-                                                finalize(S10)
-                                            end
+                                                % item 1217
+                                                Range = get_range(Req),
+                                                % item 1229
+                                                case Range =:= [] of true -> 
+                                                    % item 1236
+                                                    S10 = S9
+                                                ; false ->
+                                                    % item 1231
+                                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                        % item 1232
+                                                        S10 = with_exchange(fun(Ex) ->
+                                                            emx:set_resp_range(Range, Ex)
+                                                        end, S9)
+                                                    ; false ->
+                                                        % item 1236
+                                                        S10 = S9
+                                                    end
+                                                end
+                                            end,
+                                            % item 769
+                                            S11 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S10),
+                                            % item 771
+                                            finalize(S11)
                                         end
                                     ; false ->
                                         % item 1152
@@ -730,19 +858,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 end
                             ; false ->
@@ -767,19 +911,35 @@ get_flow(Method, State) ->
                                             S9 = set_content_type(S8),
                                             % item 1154
                                             case Method =:= 'HEAD' of true -> 
-                                                % item 1158
-                                                error(not_implemented)
+                                                % item 1238
+                                                S10 = S9
                                             ; false ->
-                                                % item 1159
-                                                _CanRange = can_range(ETag, LastModified, 
-                                                    get_header(<<"If-Range">>, S9, undefined)),
-                                                % item 769
-                                                S10 = with_exchange(fun(Ex) ->
-                                                    emx:set_resp_body(Response, Ex)
-                                                end, S9),
-                                                % item 771
-                                                finalize(S10)
-                                            end
+                                                % item 1217
+                                                Range = get_range(Req),
+                                                % item 1229
+                                                case Range =:= [] of true -> 
+                                                    % item 1236
+                                                    S10 = S9
+                                                ; false ->
+                                                    % item 1231
+                                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                        % item 1232
+                                                        S10 = with_exchange(fun(Ex) ->
+                                                            emx:set_resp_range(Range, Ex)
+                                                        end, S9)
+                                                    ; false ->
+                                                        % item 1236
+                                                        S10 = S9
+                                                    end
+                                                end
+                                            end,
+                                            % item 769
+                                            S11 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S10),
+                                            % item 771
+                                            finalize(S11)
                                         end
                                     ; false ->
                                         % item 1152
@@ -791,19 +951,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -815,19 +991,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             end
                         end
@@ -870,19 +1062,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -894,19 +1102,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -918,19 +1142,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         end
                     ; false ->
@@ -955,19 +1195,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -979,19 +1235,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         ; false ->
                             % item 1152
@@ -1003,19 +1275,35 @@ get_flow(Method, State) ->
                             S9 = set_content_type(S8),
                             % item 1154
                             case Method =:= 'HEAD' of true -> 
-                                % item 1158
-                                error(not_implemented)
+                                % item 1238
+                                S10 = S9
                             ; false ->
-                                % item 1159
-                                _CanRange = can_range(ETag, LastModified, 
-                                    get_header(<<"If-Range">>, S9, undefined)),
-                                % item 769
-                                S10 = with_exchange(fun(Ex) ->
-                                    emx:set_resp_body(Response, Ex)
-                                end, S9),
-                                % item 771
-                                finalize(S10)
-                            end
+                                % item 1217
+                                Range = get_range(Req),
+                                % item 1229
+                                case Range =:= [] of true -> 
+                                    % item 1236
+                                    S10 = S9
+                                ; false ->
+                                    % item 1231
+                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                        % item 1232
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_range(Range, Ex)
+                                        end, S9)
+                                    ; false ->
+                                        % item 1236
+                                        S10 = S9
+                                    end
+                                end
+                            end,
+                            % item 769
+                            S11 = with_exchange(fun(Ex) ->
+                                emx:set_resp_body(Response, Ex)
+                            end, S10),
+                            % item 771
+                            finalize(S11)
                         end
                     end
                 end
@@ -1070,19 +1358,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -1094,19 +1398,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -1118,19 +1438,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         end
                     ; false ->
@@ -1155,19 +1491,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -1179,19 +1531,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         ; false ->
                             % item 1152
@@ -1203,19 +1571,35 @@ get_flow(Method, State) ->
                             S9 = set_content_type(S8),
                             % item 1154
                             case Method =:= 'HEAD' of true -> 
-                                % item 1158
-                                error(not_implemented)
+                                % item 1238
+                                S10 = S9
                             ; false ->
-                                % item 1159
-                                _CanRange = can_range(ETag, LastModified, 
-                                    get_header(<<"If-Range">>, S9, undefined)),
-                                % item 769
-                                S10 = with_exchange(fun(Ex) ->
-                                    emx:set_resp_body(Response, Ex)
-                                end, S9),
-                                % item 771
-                                finalize(S10)
-                            end
+                                % item 1217
+                                Range = get_range(Req),
+                                % item 1229
+                                case Range =:= [] of true -> 
+                                    % item 1236
+                                    S10 = S9
+                                ; false ->
+                                    % item 1231
+                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                        % item 1232
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_range(Range, Ex)
+                                        end, S9)
+                                    ; false ->
+                                        % item 1236
+                                        S10 = S9
+                                    end
+                                end
+                            end,
+                            % item 769
+                            S11 = with_exchange(fun(Ex) ->
+                                emx:set_resp_body(Response, Ex)
+                            end, S10),
+                            % item 771
+                            finalize(S11)
                         end
                     end
                 ; false ->
@@ -1262,19 +1646,35 @@ get_flow(Method, State) ->
                                             S9 = set_content_type(S8),
                                             % item 1154
                                             case Method =:= 'HEAD' of true -> 
-                                                % item 1158
-                                                error(not_implemented)
+                                                % item 1238
+                                                S10 = S9
                                             ; false ->
-                                                % item 1159
-                                                _CanRange = can_range(ETag, LastModified, 
-                                                    get_header(<<"If-Range">>, S9, undefined)),
-                                                % item 769
-                                                S10 = with_exchange(fun(Ex) ->
-                                                    emx:set_resp_body(Response, Ex)
-                                                end, S9),
-                                                % item 771
-                                                finalize(S10)
-                                            end
+                                                % item 1217
+                                                Range = get_range(Req),
+                                                % item 1229
+                                                case Range =:= [] of true -> 
+                                                    % item 1236
+                                                    S10 = S9
+                                                ; false ->
+                                                    % item 1231
+                                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                        % item 1232
+                                                        S10 = with_exchange(fun(Ex) ->
+                                                            emx:set_resp_range(Range, Ex)
+                                                        end, S9)
+                                                    ; false ->
+                                                        % item 1236
+                                                        S10 = S9
+                                                    end
+                                                end
+                                            end,
+                                            % item 769
+                                            S11 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_body(Response, Ex)
+                                            end, S10),
+                                            % item 771
+                                            finalize(S11)
                                         end
                                     ; false ->
                                         % item 1152
@@ -1286,19 +1686,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -1310,19 +1726,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             end
                         ; false ->
@@ -1347,19 +1779,35 @@ get_flow(Method, State) ->
                                         S9 = set_content_type(S8),
                                         % item 1154
                                         case Method =:= 'HEAD' of true -> 
-                                            % item 1158
-                                            error(not_implemented)
+                                            % item 1238
+                                            S10 = S9
                                         ; false ->
-                                            % item 1159
-                                            _CanRange = can_range(ETag, LastModified, 
-                                                get_header(<<"If-Range">>, S9, undefined)),
-                                            % item 769
-                                            S10 = with_exchange(fun(Ex) ->
-                                                emx:set_resp_body(Response, Ex)
-                                            end, S9),
-                                            % item 771
-                                            finalize(S10)
-                                        end
+                                            % item 1217
+                                            Range = get_range(Req),
+                                            % item 1229
+                                            case Range =:= [] of true -> 
+                                                % item 1236
+                                                S10 = S9
+                                            ; false ->
+                                                % item 1231
+                                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                    % item 1232
+                                                    S10 = with_exchange(fun(Ex) ->
+                                                        emx:set_resp_range(Range, Ex)
+                                                    end, S9)
+                                                ; false ->
+                                                    % item 1236
+                                                    S10 = S9
+                                                end
+                                            end
+                                        end,
+                                        % item 769
+                                        S11 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_body(Response, Ex)
+                                        end, S10),
+                                        % item 771
+                                        finalize(S11)
                                     end
                                 ; false ->
                                     % item 1152
@@ -1371,19 +1819,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -1395,19 +1859,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         end
                     end
@@ -1450,19 +1930,35 @@ get_flow(Method, State) ->
                                     S9 = set_content_type(S8),
                                     % item 1154
                                     case Method =:= 'HEAD' of true -> 
-                                        % item 1158
-                                        error(not_implemented)
+                                        % item 1238
+                                        S10 = S9
                                     ; false ->
-                                        % item 1159
-                                        _CanRange = can_range(ETag, LastModified, 
-                                            get_header(<<"If-Range">>, S9, undefined)),
-                                        % item 769
-                                        S10 = with_exchange(fun(Ex) ->
-                                            emx:set_resp_body(Response, Ex)
-                                        end, S9),
-                                        % item 771
-                                        finalize(S10)
-                                    end
+                                        % item 1217
+                                        Range = get_range(Req),
+                                        % item 1229
+                                        case Range =:= [] of true -> 
+                                            % item 1236
+                                            S10 = S9
+                                        ; false ->
+                                            % item 1231
+                                            case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                                % item 1232
+                                                S10 = with_exchange(fun(Ex) ->
+                                                    emx:set_resp_range(Range, Ex)
+                                                end, S9)
+                                            ; false ->
+                                                % item 1236
+                                                S10 = S9
+                                            end
+                                        end
+                                    end,
+                                    % item 769
+                                    S11 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_body(Response, Ex)
+                                    end, S10),
+                                    % item 771
+                                    finalize(S11)
                                 end
                             ; false ->
                                 % item 1152
@@ -1474,19 +1970,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         ; false ->
                             % item 1152
@@ -1498,19 +2010,35 @@ get_flow(Method, State) ->
                             S9 = set_content_type(S8),
                             % item 1154
                             case Method =:= 'HEAD' of true -> 
-                                % item 1158
-                                error(not_implemented)
+                                % item 1238
+                                S10 = S9
                             ; false ->
-                                % item 1159
-                                _CanRange = can_range(ETag, LastModified, 
-                                    get_header(<<"If-Range">>, S9, undefined)),
-                                % item 769
-                                S10 = with_exchange(fun(Ex) ->
-                                    emx:set_resp_body(Response, Ex)
-                                end, S9),
-                                % item 771
-                                finalize(S10)
-                            end
+                                % item 1217
+                                Range = get_range(Req),
+                                % item 1229
+                                case Range =:= [] of true -> 
+                                    % item 1236
+                                    S10 = S9
+                                ; false ->
+                                    % item 1231
+                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                        % item 1232
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_range(Range, Ex)
+                                        end, S9)
+                                    ; false ->
+                                        % item 1236
+                                        S10 = S9
+                                    end
+                                end
+                            end,
+                            % item 769
+                            S11 = with_exchange(fun(Ex) ->
+                                emx:set_resp_body(Response, Ex)
+                            end, S10),
+                            % item 771
+                            finalize(S11)
                         end
                     end
                 ; false ->
@@ -1535,19 +2063,35 @@ get_flow(Method, State) ->
                                 S9 = set_content_type(S8),
                                 % item 1154
                                 case Method =:= 'HEAD' of true -> 
-                                    % item 1158
-                                    error(not_implemented)
+                                    % item 1238
+                                    S10 = S9
                                 ; false ->
-                                    % item 1159
-                                    _CanRange = can_range(ETag, LastModified, 
-                                        get_header(<<"If-Range">>, S9, undefined)),
-                                    % item 769
-                                    S10 = with_exchange(fun(Ex) ->
-                                        emx:set_resp_body(Response, Ex)
-                                    end, S9),
-                                    % item 771
-                                    finalize(S10)
-                                end
+                                    % item 1217
+                                    Range = get_range(Req),
+                                    % item 1229
+                                    case Range =:= [] of true -> 
+                                        % item 1236
+                                        S10 = S9
+                                    ; false ->
+                                        % item 1231
+                                        case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                            % item 1232
+                                            S10 = with_exchange(fun(Ex) ->
+                                                emx:set_resp_range(Range, Ex)
+                                            end, S9)
+                                        ; false ->
+                                            % item 1236
+                                            S10 = S9
+                                        end
+                                    end
+                                end,
+                                % item 769
+                                S11 = with_exchange(fun(Ex) ->
+                                    emx:set_resp_body(Response, Ex)
+                                end, S10),
+                                % item 771
+                                finalize(S11)
                             end
                         ; false ->
                             % item 1152
@@ -1559,19 +2103,35 @@ get_flow(Method, State) ->
                             S9 = set_content_type(S8),
                             % item 1154
                             case Method =:= 'HEAD' of true -> 
-                                % item 1158
-                                error(not_implemented)
+                                % item 1238
+                                S10 = S9
                             ; false ->
-                                % item 1159
-                                _CanRange = can_range(ETag, LastModified, 
-                                    get_header(<<"If-Range">>, S9, undefined)),
-                                % item 769
-                                S10 = with_exchange(fun(Ex) ->
-                                    emx:set_resp_body(Response, Ex)
-                                end, S9),
-                                % item 771
-                                finalize(S10)
-                            end
+                                % item 1217
+                                Range = get_range(Req),
+                                % item 1229
+                                case Range =:= [] of true -> 
+                                    % item 1236
+                                    S10 = S9
+                                ; false ->
+                                    % item 1231
+                                    case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                        % item 1232
+                                        S10 = with_exchange(fun(Ex) ->
+                                            emx:set_resp_range(Range, Ex)
+                                        end, S9)
+                                    ; false ->
+                                        % item 1236
+                                        S10 = S9
+                                    end
+                                end
+                            end,
+                            % item 769
+                            S11 = with_exchange(fun(Ex) ->
+                                emx:set_resp_body(Response, Ex)
+                            end, S10),
+                            % item 771
+                            finalize(S11)
                         end
                     ; false ->
                         % item 1152
@@ -1583,19 +2143,35 @@ get_flow(Method, State) ->
                         S9 = set_content_type(S8),
                         % item 1154
                         case Method =:= 'HEAD' of true -> 
-                            % item 1158
-                            error(not_implemented)
+                            % item 1238
+                            S10 = S9
                         ; false ->
-                            % item 1159
-                            _CanRange = can_range(ETag, LastModified, 
-                                get_header(<<"If-Range">>, S9, undefined)),
-                            % item 769
-                            S10 = with_exchange(fun(Ex) ->
-                                emx:set_resp_body(Response, Ex)
-                            end, S9),
-                            % item 771
-                            finalize(S10)
-                        end
+                            % item 1217
+                            Range = get_range(Req),
+                            % item 1229
+                            case Range =:= [] of true -> 
+                                % item 1236
+                                S10 = S9
+                            ; false ->
+                                % item 1231
+                                case can_range(ETag, LastModified, 
+    get_header(<<"If-Range">>, S9, undefined)) of true -> 
+                                    % item 1232
+                                    S10 = with_exchange(fun(Ex) ->
+                                        emx:set_resp_range(Range, Ex)
+                                    end, S9)
+                                ; false ->
+                                    % item 1236
+                                    S10 = S9
+                                end
+                            end
+                        end,
+                        % item 769
+                        S11 = with_exchange(fun(Ex) ->
+                            emx:set_resp_body(Response, Ex)
+                        end, S10),
+                        % item 771
+                        finalize(S11)
                     end
                 end
             end
@@ -1650,6 +2226,19 @@ get_header(Name, State, Default) ->
     end
 .
 
+get_range(Req) ->
+    % item 1223
+    Range = elli_request:get_range(Req),
+    % item 1224
+    case Range =:= parse_error of true -> 
+        % item 1227
+        % item 1226
+        []
+    ; false ->
+        []
+    end
+.
+
 handle_request(State) ->
     % item 596
     {Code, EndDoRequestState} = 
@@ -1670,14 +2259,14 @@ has_resp_body(State) ->
 .
 
 is_etag(Header) ->
-    % item 1203
+    % item 1206
     First = binary:first(Header),
-    % item 1204
+    % item 1207
     case ((First =:= $") orelse (First =:= $w)) orelse (First =:= $W) of true -> 
-        % item 1210
+        % item 1213
         true
     ; false ->
-        % item 1207
+        % item 1210
         false
     end
 .
