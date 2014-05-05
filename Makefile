@@ -1,6 +1,10 @@
 PROJECT = elli_machine
+
 REBAR := $(shell which rebar 2>/dev/null || echo ./rebar)
 REBAR_URL := https://github.com/downloads/basho/rebar/rebar
+
+DRAKON_URL := http://downloads.sourceforge.net/project/drakon-editor/drakon_editor1.22.zip
+
 DIALYZER = dialyzer
 
 all: compile
@@ -10,6 +14,21 @@ all: compile
         -eval '{ok, saved_to_file} = httpc:request(get, {"$(REBAR_URL)", []}, [], [{stream, "./rebar"}])' \
         -s inets stop -s init stop
 	chmod +x ./rebar
+
+drakon:
+	mkdir -p drakon
+
+drakon_editor: drakon
+	erl -noshell -s inets start -s ssl start \
+        -eval '{ok, saved_to_file} = httpc:request(get, {"$(DRAKON_URL)", []}, [], [{stream, "./drakon/drakon_editor1.22.zip"}])' \
+        -s inets stop -s init stop
+	unzip -u drakon/drakon_editor1.22.zip -d drakon
+	echo tclsh8.6 drakon/drakon_editor.tcl $$\@ \& > drakon_editor
+	chmod +x drakon_editor
+	
+drakon_gen: drakon_editor
+	echo tclsh8.6 drakon/drakon_gen.tcl $$\@  > drakon_gen
+	chmod +x drakon_gen
 	
 compile: rebar
 	$(REBAR) compile
@@ -23,6 +42,9 @@ clean: rebar
 
 distclean: 
 	rm $(REBAR)
+	rm -rf drakon
+	rm -f drakon_editor
+	rm -f drakon_gen
 
 
 # dializer 
