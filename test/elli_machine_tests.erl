@@ -76,18 +76,25 @@ get_error_test() ->
 get_etag_test() ->
     Config = config(),
     %% Test if the etag is added.
-    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"ETag">>, <<"\"example-tag\"">>}], 
-        <<"Hello, new world">>}, 
-                      elli_test:call('GET', <<"/get/etag">>, [], <<>>, Config)),
+    ?assertEqual({200, [
+                {<<"Content-Type">>,<<"text/html">>}, 
+                {<<"ETag">>, <<"\"example-tag\"">>}], 
+            <<"Hello, new world">>}, 
+        elli_test:call('GET', <<"/get/etag">>, [], <<>>, Config)),
 
     %% Different etag provided
-    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"ETag">>, <<"\"example-tag\"">>}], 
-        <<"Hello, new world">>}, 
-                      elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"other\"">>}], <<>>, Config)),
+    ?assertEqual({200, [
+                {<<"Content-Type">>,<<"text/html">>}, 
+                {<<"ETag">>, <<"\"example-tag\"">>}], 
+            <<"Hello, new world">>}, 
+        elli_test:call('GET', <<"/get/etag">>, 
+            [{<<"If-None-Match">>, <<"\"other\"">>}], <<>>, Config)),
 
     %% Same tag... should respond with 403
-    ?assertEqual({304, [{<<"ETag">>, <<"\"example-tag\"">>}], <<>>}, 
-                elli_test:call('GET', <<"/get/etag">>, [{<<"If-None-Match">>, <<"\"example-tag\"">>}], <<>>, Config)),
+    ?assertEqual({304, [
+                {<<"ETag">>, <<"\"example-tag\"">>}], <<>>}, 
+                elli_test:call('GET', <<"/get/etag">>, 
+                    [{<<"If-None-Match">>, <<"\"example-tag\"">>}], <<>>, Config)),
 
     ok.
 
