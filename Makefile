@@ -29,8 +29,11 @@ drakon_editor: drakon
 drakon_gen: drakon_editor
 	echo tclsh8.6 drakon/drakon_gen.tcl $$\@  > drakon_gen
 	chmod +x drakon_gen
+
+src/elli_machine_flow.erl: drn/elli_machine_flow.drn drakon_gen
+	./drakon_gen -in drn/elli_machine_flow.drn -out src
 	
-compile: rebar
+compile: rebar src/elli_machine_flow.erl
 	$(REBAR) compile
 
 eunit: rebar

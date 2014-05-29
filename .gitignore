@@ -1,8 +1,12 @@
 rebar
 ebin
+drakon
+drakon_gen
+drakon_editor
 .eunit
 deps
 *.o
 *.beam
 *.plt
 erl_crash.dump
+
