@@ -6,15 +6,22 @@ config() ->
         {dispatcher, {elli_machine_dispatcher, [
             {dispatch_list, [
                 %% For get requests
-                {[<<"get">>, <<"etag">>], example_controller, [{etag, <<"example-tag">>}]},
-                {[<<"get">>, <<"last_modified">>], example_controller, [{last_modified, {{2010, 4, 1}, {10, 30, 51}} } ]},                
+                {[<<"get">>, <<"etag">>], example_controller, 
+                    [{etag, <<"example-tag">>}]},
+                {[<<"get">>, <<"last_modified">>], example_controller, 
+                    [{last_modified, {{2010, 4, 1}, {10, 30, 51}} } ]},                
+
+                %% Conneg tests
+                {[<<"get">>, <<"conneg">>], test_conneg_controller, []}, 
 
                 %% For post tests
                 {[<<"post">>, '*'], test_post_controller, []},
             
                 %% For auth tests
-                {[<<"auth">>, <<"realm">>], test_auth_controller, {realm, <<"Basic realm=Drakon">>}},
-                {[<<"auth">>, <<"halt">>], test_auth_controller, {halt, 200}}
+                {[<<"auth">>, <<"realm">>], test_auth_controller, 
+                    {realm, <<"Basic realm=Drakon">>}},
+                {[<<"auth">>, <<"halt">>], test_auth_controller, 
+                    {halt, 200}}
             ]}
         ]}}
     ], 
@@ -114,7 +121,8 @@ if_modified_since_test() ->
     %% Wrong date format... ignore...
     ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
         {<<"Last-Modified">>, <<"Thu, 01 Apr 2010 10:30:51 GMT">>}], <<"Hello, new world">>}, 
-        elli_test:call('GET', <<"/get/last_modified">>, [{<<"If-Modified-Since">>, <<"yeah">>}], <<>>, Config)),
+        elli_test:call('GET', <<"/get/last_modified">>, 
+            [{<<"If-Modified-Since">>, <<"yeah">>}], <<>>, Config)),
 
     %% 
     ?assertEqual({304, [], <<>>}, 
@@ -124,7 +132,55 @@ if_modified_since_test() ->
     %% Wrong date format should be ignored.
     ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, 
         {<<"Last-Modified">>, <<"Thu, 01 Apr 2010 10:30:51 GMT">>}], <<"Hello, new world">>}, 
-        elli_test:call('GET', <<"/get/last_modified">>, [{<<"If-Modified-Since">>, <<"Thu, 02 Apr 2010 10:30:70 GMT">>}], <<>>, Config)),
+        elli_test:call('GET', <<"/get/last_modified">>, 
+            [{<<"If-Modified-Since">>, <<"Thu, 02 Apr 2010 10:30:70 GMT">>}], <<>>, Config)),
+
+    ok.
+
+content_negotiation_test() ->
+    Config = config(),
+
+    %% Check if the vary header is set.
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"<html><head></head><body>html response</body></html>">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [], <<>>, Config)),
+
+    %% Requesting text plain should result in a plain text response. 
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/plain">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"plain response">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [{<<"Accept">>, <<"text/plain">>}], <<>>, Config)),
+
+    %% Requesting javascript, not-acceptable.
+    ?assertEqual({406, [], <<>>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [{<<"Accept">>, <<"text/javascript">>}], <<>>, Config)),
+
+    %% Client accepts html and plain responses, but likes plain responses better.
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/plain">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"plain response">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [
+                {<<"Accept">>, <<"text/plain; q=0.5, text/html; q=0.2">>}], <<>>, Config)),
+
+    %% Client accepts html and plain responses, but likes plain responses better.
+    %% With multiple accept headers
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/plain">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"plain response">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [
+                {<<"Accept">>, <<"text/plain; q=0.5">>}, 
+                {<<"Accept">>, <<"text/html; q=0.2">>}], <<>>, Config)),
+
+    %% Client accepts html and plain responses, but likes html responses better.
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"<html><head></head><body>html response</body></html>">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [
+                {<<"Accept">>, <<"text/plain; q=0.1, text/html; q=0.5">>}], <<>>, Config)),
+
+    %% Client accepts html and plain responses, but likes html responses better.
+    %% With multiple accept headers
+    ?assertEqual({200, [{<<"Content-Type">>,<<"text/html">>}, {<<"Vary">>, <<"Accept">>}], 
+            <<"<html><head></head><body>html response</body></html>">>}, 
+        elli_test:call('GET', <<"/get/conneg">>, [
+                {<<"Accept">>, <<"text/plain; q=0.1">>}, 
+                {<<"Accept">>, <<"text/html; q=0.5">>}], <<>>, Config)),
 
     ok.
 

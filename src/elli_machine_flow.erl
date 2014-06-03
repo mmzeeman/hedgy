@@ -17,7 +17,7 @@
 
 accept_charset(State) ->
     % item 887
-    CheckCharset = get_header(<<"Accept-Charset">>, State, <<"*">>),
+    CheckCharset = get_accept_header(<<"Accept-Charset">>, State, <<"*">>),
     {CharsetsAvailable, S1} = call(charsets_provided, State),
     % item 892
     case CharsetsAvailable =:= no_charset of true -> 
@@ -41,7 +41,7 @@ accept_charset(State) ->
 
 accept_content_encoding(State) ->
     % item 961
-    CheckEncoding = get_header(<<"Accept-Encoding">>, 
+    CheckEncoding = get_accept_header(<<"Accept-Encoding">>, 
         State, <<"identity;q=1.0,*;q=0.5">>),
     {EncodingsProvided, S1} = call(content_encodings_provided, State),
     ChosenContentEncoding = 
@@ -68,7 +68,7 @@ accept_content_encoding(State) ->
 accept_content_type(State) ->
     % item 902
     {ContentTypesProvided, S1} = call(content_types_provided, State),
-    AcceptHeader = get_header(<<"Accept">>, State, undefined),
+    AcceptHeader = get_accept_header(<<"Accept">>, State, undefined),
     % item 903
     case AcceptHeader =:= undefined of true -> 
         % item 910
@@ -102,9 +102,8 @@ accept_content_type(State) ->
 
 accept_language(State) ->
     % item 917
-    Req = request(State),
     AcceptLanguageHeader = 
-    	elli_request:get_header(<<"Accept-Language">>, Req),
+    	get_accept_header(<<"Accept-Language">>, State, undefined),
     % item 918
     case AcceptLanguageHeader =:= undefined of true -> 
         % item 923
@@ -407,6 +406,21 @@ finalize(State) ->
         % item 177
         % No Content
         respond(204, State)
+    end
+.
+
+get_accept_header(Name, State, Default) ->
+    % item 1247
+    Headers = elli_request:headers(request(State)),
+    % item 1248
+    Values = proplists:get_all_values(Name, Headers),
+    % item 1249
+    case Values =:= [] of true -> 
+        % item 1252
+        Default
+    ; false ->
+        % item 1253
+        elli_machine_util:binary_join(Values, $,)
     end
 .
 
