@@ -1,9 +1,9 @@
 %% @author Maas-Maarten Zeeman <mmzeeman@xs4all.nl>
 %% @copyright 2013 Maas-Maarten Zeeman
 %%
-%% @doc Elli Machine Utils
+%% @doc Hedgy Utils
 %%
-%% Copyright 2013 Maas-Maarten Zeeman
+%% Copyright 2013, 2014 Maas-Maarten Zeeman
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 %% Implementations taken from webmachine_util.erl and made binary versions.
 
--module(elli_machine_util).
+-module(hedgy_util).
 
 -include_lib("elli/include/elli_util.hrl").
 
@@ -243,7 +243,7 @@ format_content_type(Type, [H|T]) ->
     format_content_type(<<Type/binary, "; ", H/binary>>, T).
 
 do_choose(Choices, Header, Default) ->
-    NoWsHeader = elli_machine_util:remove_whitespace(Header),
+    NoWsHeader = hedgy_util:remove_whitespace(Header),
     Accepted = build_conneg_list(binary:split(NoWsHeader, <<",">>, [global])),
     DefaultPrio = [P || {P,C} <- Accepted, C =:= Default],
     StarPrio = [P || {P,C} <- Accepted, C =:= <<"*">>],

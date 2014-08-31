@@ -8,8 +8,8 @@ start() ->
     _ = application:start(public_key),
     _ = application:start(ssl),
     
-    MachineConfig = [
-        {dispatcher, {elli_machine_dispatcher, [
+    HedgyConfig = [
+        {dispatcher, {hedgy_dispatcher, [
             {dispatch_list, [
                 {[<<"hello">>, '*'], example_controller, []}
             ]}
@@ -21,7 +21,7 @@ start() ->
             {elli_debug, []},
             {elli_date, []},
             {elli_server_name, []},
-            {elli_machine, MachineConfig}
+            {hedgy, HedgyConfig}
         ]}
     ],
 

@@ -31,7 +31,7 @@ content_types_provided(ReqData, Context) ->
       {<<"text/plain">>, to_plain}], ReqData, Context}.
 
 process_request(X, Context) ->
-    X1 = emx:set_resp_body(<<"<html><head></head><body>thank-you</body></html>">>, X),
+    X1 = hx:set_resp_body(<<"<html><head></head><body>thank-you</body></html>">>, X),
     {true, X1, Context}.
 
 to_html(ReqData, Context) ->

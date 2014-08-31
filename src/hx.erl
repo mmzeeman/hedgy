@@ -1,7 +1,7 @@
 %% @author Maas-Maarten Zeeman <mmzeeman@xs4all.nl>
-%% @copyright 2013 Maas-Maarten Zeeman
+%% @copyright 2013, 2014 Maas-Maarten Zeeman
 %%
-%% @doc Elli Machine Request 
+%% @doc Hedgy Exchange
 %%
 %% Copyright 2013 Maas-Maarten Zeeman
 %%
@@ -17,11 +17,11 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 
-%% Short for elli machine exchange.
--module(emx).
+%% Short for hedgy exchange.
+-module(hx).
 
 -include_lib("elli/include/elli.hrl").
--include("elli_machine.hrl").
+-include("hedgy.hrl").
 
 -export([
     make_exchange/1,
@@ -67,12 +67,12 @@
 %% Api
 %%
 
--spec make_exchange(Req :: elli:req()) -> elli_machine:exchange().
+-spec make_exchange(Req :: elli:req()) -> hedgy:exchange().
 make_exchange(Req) ->
-    #machine_exchange{req=Req}.
+    #hedgy_exchange{req=Req}.
 
 % @doc Return an elli response.
-response(#machine_exchange{resp_code=Code, resp_headers=Headers, resp_body=Body}) 
+response(#hedgy_exchange{resp_code=Code, resp_headers=Headers, resp_body=Body}) 
         when Code =/= undefined ->
     {Code, Headers, Body}.
 
@@ -80,16 +80,16 @@ response(#machine_exchange{resp_code=Code, resp_headers=Headers, resp_body=Body}
 %%
 %% @doc Call the controller or a default.
 %% @spec controller_call(atom(), Resource, ReqData) -> {term(), NewResource, NewReqData}
-controller_do(Fun, #machine_exchange{}=ReqData) ->
-    elli_machine_controller:do(ReqData).
+controller_do(Fun, #hedgy_exchange{}=ReqData) ->
+    hedgy_controller:do(ReqData).
 
 
 % @doc Return the method of the request.
-method(#machine_exchange{req=Req}) ->
+method(#hedgy_exchange{req=Req}) ->
     elli_request:method(Req).
 
 % @doc Return true iff this is a GET or HEAD request.
-is_get_or_head(#machine_exchange{req=Req}) ->
+is_get_or_head(#hedgy_exchange{req=Req}) ->
     case elli_request:method(Req) of
         'GET' -> 
             true;
@@ -100,11 +100,11 @@ is_get_or_head(#machine_exchange{req=Req}) ->
     end.
 
 % @doc Get the request body.
-get_req_body(#machine_exchange{req=Req}) ->
+get_req_body(#hedgy_exchange{req=Req}) ->
     elli_request:body(Req).
 
 % @doc Gte
-get_req_header(Header, #machine_exchange{req=Req}) ->
+get_req_header(Header, #hedgy_exchange{req=Req}) ->
     elli_request:get_header(Header, Req).
     
 % @doc
@@ -116,74 +116,74 @@ get_req_header_lc(Header, ReqData) ->
 
 % @doc Set the response code of the request
 set_resp_code(Code, Exchange) ->
-    Exchange#machine_exchange{resp_code=Code}.
+    Exchange#hedgy_exchange{resp_code=Code}.
 
 % @doc Set a response header.
-set_resp_header(Header, Value, #machine_exchange{resp_headers=RespHeaders}=Exchange) ->
-    Exchange#machine_exchange{resp_headers=[{Header, Value}|RespHeaders]}.
+set_resp_header(Header, Value, #hedgy_exchange{resp_headers=RespHeaders}=Exchange) ->
+    Exchange#hedgy_exchange{resp_headers=[{Header, Value}|RespHeaders]}.
 
 % @doc Set the headers.
-set_resp_headers(Headers, #machine_exchange{resp_headers=RespHeaders}=Exchange) ->
-    Exchange#machine_exchange{resp_headers=RespHeaders++Headers}.
+set_resp_headers(Headers, #hedgy_exchange{resp_headers=RespHeaders}=Exchange) ->
+    Exchange#hedgy_exchange{resp_headers=RespHeaders++Headers}.
 
 % @doc Get a response header
-get_resp_header(Key, #machine_exchange{resp_headers=RespHeaders}) ->
+get_resp_header(Key, #hedgy_exchange{resp_headers=RespHeaders}) ->
     proplists:get_value(Key, RespHeaders).
 
 % @doc Set the response body.
 set_resp_body(Body, ReqData) ->
-    ReqData#machine_exchange{resp_body=Body}.
+    ReqData#hedgy_exchange{resp_body=Body}.
 
 % @doc Get the response body.
 get_resp_body(ReqData) ->
-    ReqData#machine_exchange.resp_body.
+    ReqData#hedgy_exchange.resp_body.
 
 % @doc Returns true iff the request has a response body.
--spec has_resp_body(elli_machine:exchange()) -> false.
-has_resp_body(#machine_exchange{resp_body= <<>>}) ->
+-spec has_resp_body(hedgy:exchange()) -> false.
+has_resp_body(#hedgy_exchange{resp_body= <<>>}) ->
     false;
 has_resp_body(_) ->
     true.
 
 set_resp_content_type(Val, Exchange) ->
-    Exchange#machine_exchange{content_type=Val}.
+    Exchange#hedgy_exchange{content_type=Val}.
 
 get_resp_content_type(Exchange) ->
-    Exchange#machine_exchange.content_type.
+    Exchange#hedgy_exchange.content_type.
 
 set_resp_content_fun(Val, Exchange) ->
-    Exchange#machine_exchange{content_fun=Val}.
+    Exchange#hedgy_exchange{content_fun=Val}.
 
 get_resp_content_fun(Exchange) ->
-    Exchange#machine_exchange.content_fun.
+    Exchange#hedgy_exchange.content_fun.
 
 set_resp_chosen_charset(Val, Exchange) ->
-    Exchange#machine_exchange{chosen_charset=Val}.
+    Exchange#hedgy_exchange{chosen_charset=Val}.
 
 get_resp_chosen_charset(Exchange) ->
-    Exchange#machine_exchange.chosen_charset.
+    Exchange#hedgy_exchange.chosen_charset.
 
 set_resp_range(Range, Exchange) ->
-    Exchange#machine_exchange{range=Range}.
+    Exchange#hedgy_exchange{range=Range}.
 
 
 
 
 % @doc Sets metadata
 set_metadata('content-encoding', Val, Exchange) ->
-    {ok, Exchange#machine_exchange{content_encoding = Val}};
+    {ok, Exchange#hedgy_exchange{content_encoding = Val}};
 set_metadata('chosen-charset', Val, Exchange) ->
-    {ok, Exchange#machine_exchange{chosen_charset = Val}};
+    {ok, Exchange#hedgy_exchange{chosen_charset = Val}};
 set_metadata('mediaparams', Val, Exchange) ->
-    {ok, Exchange#machine_exchange{mediaparams = Val}}.
+    {ok, Exchange#hedgy_exchange{mediaparams = Val}}.
 
 % @doc Get metadata.
 get_metadata(content_encoding, Exchange) ->
-    Exchange#machine_exchange.content_encoding;
+    Exchange#hedgy_exchange.content_encoding;
 get_metadata(chosen_charset, Exchange) ->
-    Exchange#machine_exchange.chosen_charset;
+    Exchange#hedgy_exchange.chosen_charset;
 get_metadata(mediaparams, Exchange) ->
-    Exchange#machine_exchange.mediaparams.
+    Exchange#hedgy_exchange.mediaparams.
 
 
 

@@ -20,7 +20,7 @@ ping(ReqData, Context) ->
     {pong, ReqData, Context}.
 
 is_authorized(ReqData, {halt, Code}=Context) ->
-    {{halt, 200}, emx:set_resp_body(<<"halt">>, ReqData), Context};
+    {{halt, 200}, hx:set_resp_body(<<"halt">>, ReqData), Context};
 is_authorized(ReqData, {realm, Realm}=Context) ->
     {Realm, ReqData, Context}.
 

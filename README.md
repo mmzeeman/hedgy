@@ -1,16 +1,16 @@
-# Elli Machine
+# Hedgy 
 
-Elli Machine, another flavor of web(z)machine
+Hedgy, another flavor of web(z)machine
 
 *work in progress*
 
 ## Introduction
 
-Elli Machine is a webmachine implementation on top of the Elli webserver. The main idea of Elli Machine is to have a higher level http api on top of a fast and modular http webserver. All header and body handling is done with binaries. Elli Machine does not do any logging, set server name headers, as this can be handled by specialized Elli middleware.
+Hedgy is a webmachine implementation on top of the Elli webserver. The main idea of Hedgy is to have a higher level http api on top of a fast and modular http webserver. All header and body handling is done with binaries. Hedgy does not do any logging, set server name headers, as this can be handled by specialized Elli middleware.
 
 ## Controllers
 
-Controllers are modules with a set of functions which you can use to define the behaviour of your web service. Elli Machine takes care of the protocol handling. Controllers are similar to webmachine resources.
+Controllers are modules with a set of functions which you can use to define the behaviour of your web service. Hedgy takes care of the protocol handling. Controllers are similar to webmachine resources.
 
 ```erlang
 init(Exchange, Args) -> {ok, Context} 
@@ -30,7 +30,7 @@ receive events from the http decision core. This can be used during debugging or
 render_error(Code, Error, Exchange, Context) -> {Html, Exchange, Context}
 ```
 
-When Elli Machine encounters an error during processing of a request and a controller exports this function it will be used to render a html error message.
+When Hedgy encounters an error during processing of a request and a controller exports this function it will be used to render a html error message.
 
 ## Controller Function Signature
 
@@ -48,14 +48,14 @@ values in the Result term from different resource functions.
 ### Context
 
 Context is an arbitrary term() that is specific to your
-application. Elli Machine will never do anything with this term other
+application. Hedgy will never do anything with this term other
 than threading it through the various functions of your resource. This
 is the means by which transient application-specific request state is
 passed along between functions.
 
 ### Exchange
 
-Exchange is a #machine_exchange{} term, and is manipulated via 
+Exchange is a #hedgy_exchange{} term, and is manipulated via 
 the emx interface. A controller function may access request data 
 (such as header values) from the input value. If a resource function 
 wishes to affect the response data in some way other than that implied 
@@ -117,7 +117,7 @@ addition to whichever of these a controller wishes to use, it also must
 export all of the functions named in the return values of the
 `content_types_provided` and `content_types_accepted` functions.
 
-The core logic of elli_machine is created with DRAKON, a visual language
+The core logic of hedgy is created with DRAKON, a visual language
 for specifications from the Russian space program. DRAKON is used for 
 capturing requirements and building software that controls spacecraft.
 

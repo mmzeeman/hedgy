@@ -23,17 +23,20 @@ drakon_editor: drakon
         -eval '{ok, saved_to_file} = httpc:request(get, {"$(DRAKON_URL)", []}, [], [{stream, "./drakon/drakon_editor1.22.zip"}])' \
         -s inets stop -s init stop
 	unzip -u drakon/drakon_editor1.22.zip -d drakon
-	echo tclsh8.6 drakon/drakon_editor.tcl $$\@ \& > drakon_editor
+	echo tclsh drakon/drakon_editor.tcl $$\@ \& > drakon_editor
 	chmod +x drakon_editor
 	
 drakon_gen: drakon_editor
-	echo tclsh8.6 drakon/drakon_gen.tcl $$\@  > drakon_gen
+	echo tclsh drakon/drakon_gen.tcl $$\@  > drakon_gen
 	chmod +x drakon_gen
 
-src/elli_machine_flow.erl: drn/elli_machine_flow.drn drakon_gen
-	./drakon_gen -in drn/elli_machine_flow.drn -out src
+#src/elli_machine_flow.erl: drn/elli_machine_flow.drn drakon_gen
+#	./drakon_gen -in drn/elli_machine_flow.drn -out src
+
+src/hedgy_flow.erl: drn/hedgy_flow.drn drakon_gen
+	./drakon_gen -in drn/hedgy_flow.drn -out src
 	
-compile: rebar src/elli_machine_flow.erl
+compile: rebar src/hedgy_flow.erl
 	$(REBAR) compile
 
 eunit: rebar

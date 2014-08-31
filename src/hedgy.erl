@@ -1,7 +1,7 @@
 %% @author Maas-Maarten Zeeman <mmzeeman@xs4all.nl>
-%% @copyright 2013 Maas-Maarten Zeeman
+%% @copyright 2013, 2014 Maas-Maarten Zeeman
 %%
-%% @doc Elli Machine 
+%% @doc Hedgy 
 %%
 %% Copyright 2013 Maas-Maarten Zeeman
 %%
@@ -17,20 +17,20 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 
--module(elli_machine).
+-module(hedgy).
 -author("Maas-Maarten Zeeman <mmzeeman@xs4all.nl>").
 
 -include_lib("elli/include/elli.hrl").
 
--include("elli_machine.hrl").
--include("elli_machine_internal.hrl").
+-include("hedgy.hrl").
+-include("hedgy_internal.hrl").
 
 
 -export([preprocess/2, handle/2, handle_event/3]).
 
 -export_type([exchange/0]).
--type exchange() :: record(machine_exchange).
--type flow_state() :: record(machine_flow_state).
+-type exchange() :: record(hedgy_exchange).
+-type flow_state() :: record(hedgy_flow_state).
 
 -behaviour(elli_handler).
 
@@ -51,9 +51,9 @@ preprocess(Req, Args) ->
 handle({no_dispatch_match, _ReqData}, _Args) ->
     ignore; 
 handle(FlowState, _Args) ->
-    case elli_machine_flow:handle_request(FlowState) of
+    case hedgy_flow:handle_request(FlowState) of
         {_, FlowFin} ->
-            emx:response(FlowFin#machine_flow_state.exchange);
+            hx:response(FlowFin#hedgy_flow_state.exchange);
         {upgrade, _UpgradeFun, _ControllerFin, _ReqDataFin} ->
             %% TODO: websocket upgrade will be done differently
             {501, [], <<"Upgrade not implemented">>}
@@ -73,8 +73,8 @@ dispatch(Req, Dispatcher, DispatchArgs) ->
         {{no_dispatch_match, _Host, _PathSpec}, ReqData} ->
             {no_dispatch_match, ReqData};
         {{ControllerMod, ControllerOpts, _HostRemainder, _Port, _PathRemainder, _PathBindings, _AppRoot, _StringPath}, Exchange} ->
-            {ok, ControllerState} =  elli_machine_controller:init(ControllerMod, ControllerOpts),
-            #machine_flow_state{exchange=Exchange, controller_mod=ControllerMod, controller_state=ControllerState}
+            {ok, ControllerState} =  hedgy_controller:init(ControllerMod, ControllerOpts),
+            #hedgy_flow_state{exchange=Exchange, controller_mod=ControllerMod, controller_state=ControllerState}
     end.
 
 dispatcher(Args) ->
@@ -89,7 +89,7 @@ dispatcher(Args) ->
 
 config() ->
     MachineConfig = [
-        {dispatcher, {elli_machine_dispatcher, [
+        {dispatcher, {hedgy_dispatcher, [
             {dispatch_list, [
                 {[<<"hello">>, '*'], example_controller, []}
             ]}
@@ -98,7 +98,7 @@ config() ->
 
     MiddlewareConfig = [
         {mods, [
-            {elli_machine, MachineConfig}
+            {hedgy, MachineConfig}
         ]}
     ],
 

@@ -4,13 +4,11 @@
 
 %% Adapted by:
 %% @author Maas-Maarten Zeeman <mmzeeman@xs4all.nl>
-%% @copyright 2013 Maas-Maarten Zeeman
+%% @copyright 2013, 2014 Maas-Maarten Zeeman
 %%
-%% @doc Elli Machine Dispatcher 
+%% @doc Hedgy Dispatcher 
 %%
 %% @copyright 2007-2009 Basho Technologies
-%%
-%% @copyright 2013 Maas-Maarten Zeeman
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -25,7 +23,7 @@
 %% limitations under the License.
 
 
--module(elli_machine_dispatcher).
+-module(hedgy_dispatcher).
 
 -author('Robert Ahrens <rahrens@basho.com>').
 -author('Justin Sheehy <justin@basho.com>').
@@ -44,8 +42,8 @@
 -spec dispatch(Req :: elli:req(), Args :: any()) -> {any(), any()}.
 dispatch(Req, Args) ->
    DispatchList = proplists:get_value(dispatch_list, Args, []),
-   Host = elli_machine_util:host(elli_request:headers(Req)),
-   Exchange = emx:make_exchange(Req),
+   Host = hedgy_util:host(elli_request:headers(Req)),
+   Exchange = hx:make_exchange(Req),
    {dispatch(Host, Req, DispatchList), Exchange}.
 
 %% @spec dispatch(Host::binary(), elli::req(),
@@ -214,57 +212,9 @@ bind(_, _, _, _) ->
 reconstitute([]) -> 
     <<>>;
 reconstitute(UnmatchedTokens) -> 
-    elli_machine_util:binary_join(UnmatchedTokens, <<?SEPARATOR>>).
+    hedgy_util:binary_join(UnmatchedTokens, <<?SEPARATOR>>).
 
 calculate_app_root(1) -> <<".">>;
 calculate_app_root(N) when N > 1 ->
-    elli_machine_util:binary_join(lists:duplicate(N, <<"..">>), <<?SEPARATOR>>).
+    hedgy_util:binary_join(lists:duplicate(N, <<"..">>), <<?SEPARATOR>>).
 
-
-%%
-%% Tests
-%%
-
--ifdef(TEST).
-
--include_lib("eunit/include/eunit.hrl").
-
-mk_req(Method, Path) ->
-    elli_http:mk_req(Method, {abs_path, Path}, [], <<>>, {1,1}, undefined, {undefined, undefined}).
-
-split_host_test() ->
-    ?assertEqual([<<"example">>, <<"com">>], split_host(<<"example.com">>)),
-    ?assertEqual([<<"www">>, <<"example">>, <<"com">>], split_host(<<"www.example.com">>)),
-    ok.
-
-split_host_port_test() ->
-    ?assertEqual({[<<"example">>, <<"com">>], 80}, split_host_port(<<"example.com">>)),
-    ?assertEqual({[<<"example">>, <<"com">>], 8000}, split_host_port(<<"example.com:8000">>)),
-    ok.
-
-no_dispatch_match_test() ->
-    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>],80}, [<<"een">>,<<"twee">>]}, 
-        dispatch(<<"example.com">>, mk_req('GET', <<"/een/twee">>), [])),
-    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, [<<"een">>]}, 
-        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/een">>), [])),
-    ?assertEqual({no_dispatch_match, {[<<"com">>,<<"example">>], 8000}, []}, 
-        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/">>), [])),
-    ok.
-
-dispatch_match_test() ->
-    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<".">>, <<>>},
-        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/">>), [{[], controller_test, []}])),
-    ?assertEqual({controller_test, [], [<<"com">>,<<"example">>], 8000, [], [], <<".">>, <<>>},
-        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/een">>), [{[<<"een">>], controller_test, []}])),
-    ok.
-
-another_test() ->
-    ?assertEqual({webmachine_demo_fs_resource, [{root,"/tmp/fs"}],
-             [<<"com">>,<<"example">>], 8000,
-             [<<"test.js">>],
-             [],<<"../..">>,<<"test.js">>},
-        dispatch(<<"example.com:8000">>, mk_req('GET', <<"/fs/test.js">>), [{[<<"fs">>, '*'], 
-            webmachine_demo_fs_resource, [{root, "/tmp/fs"}]} ])),
-    ok.
-
--endif.

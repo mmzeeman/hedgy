@@ -1,6 +1,6 @@
 
 
--record(machine_exchange, {
+-record(hedgy_exchange, {
     req :: undefined | elli:req(),
     req_type = standard :: standard | handover,
 

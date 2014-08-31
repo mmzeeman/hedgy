@@ -1,9 +1,9 @@
--module(elli_machine_tests).
+-module(hedgy_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 config() ->
     MachineConfig = [
-        {dispatcher, {elli_machine_dispatcher, [
+        {dispatcher, {hedgy_dispatcher, [
             {dispatch_list, [
                 %% For get requests
                 {[<<"get">>, <<"etag">>], example_controller, 
@@ -26,7 +26,7 @@ config() ->
         ]}}
     ], 
 
-    MiddlewareConfig = [{mods, [{elli_machine, MachineConfig}]}],
+    MiddlewareConfig = [{mods, [{hedgy, MachineConfig}]}],
 
     [{callback, elli_middleware},
      {callback_args, MiddlewareConfig}, {port, 8000}].

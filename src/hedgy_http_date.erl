@@ -16,7 +16,7 @@
 %% 
 %% Original from cowboy_http:http_date/1
 
--module(elli_machine_http_date).
+-module(hedgy_http_date).
 
 -export([parse/1]).
 

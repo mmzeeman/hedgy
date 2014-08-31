@@ -18,7 +18,7 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
--module(elli_machine_controller).
+-module(hedgy_controller).
 
 -author('Justin Sheehy <justin@basho.com>').
 -author('Andy Gross <andy@basho.com>').
@@ -33,8 +33,8 @@
     render_error/4
 ]).
 
--include("elli_machine.hrl").
--include("elli_machine_internal.hrl").
+-include("hedgy.hrl").
+-include("hedgy_internal.hrl").
 
         
 % @doc Intitialize controller Mod.
@@ -44,7 +44,7 @@ init(Mod, ModArgs) ->
 
 %%
 %%
-call(Fun, #machine_flow_state{controller_mod=Mod}=FlowState) when is_atom(Fun) ->
+call(Fun, #hedgy_flow_state{controller_mod=Mod}=FlowState) when is_atom(Fun) ->
     case erlang:function_exported(Mod, Fun, 2) of
         true ->
             controller_call(Fun, FlowState);
@@ -64,7 +64,7 @@ render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
             {ErrorHtml, ReqData1, State1} = Mod:render_error(Code, Reason, ReqData, State),
             {ErrorHtml, {Mod, State1}, ReqData1};
         false ->
-            {ErrorHtml, ReqData1} = elli_machine_error_handler:render_error(Code, Reason, ReqData),
+            {ErrorHtml, ReqData1} = hedgy_error_handler:render_error(Code, Reason, ReqData),
             {ErrorHtml, Controller, ReqData1}
     end.
 
@@ -72,9 +72,9 @@ render_error({Mod, State}=Controller, Code, Reason, ReqData) ->
 %% Helpers
 %%
 
-controller_call(F, #machine_flow_state{exchange=Exc, controller_mod=Mod, controller_state=State}=Flow) ->
+controller_call(F, #hedgy_flow_state{exchange=Exc, controller_mod=Mod, controller_state=State}=Flow) ->
     {Res, Exc1, State1} = Mod:F(Exc, State),
-    {Res, Flow#machine_flow_state{exchange=Exc1, controller_state=State1}}.
+    {Res, Flow#hedgy_flow_state{exchange=Exc1, controller_state=State1}}.
 
 
 use_default(Fun, Mod) ->

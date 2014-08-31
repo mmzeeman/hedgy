@@ -1,6 +1,6 @@
-{application, elli_machine,
+{application, hedgy,
  [
-  {description, "Elli Machine, another flavour of webmachine."},
+  {description, "hedgy"},
   {vsn, "1.0"},
   {registered, []},
   {applications, [
