@@ -86,14 +86,14 @@ choose_media_type(Provided, AcceptHead) ->
     %   or a string and parameters e.g. -- {<<"text/html">>,[{level,1}]}
     % (the plain string case with no parameters is much more common)
     Requested = accept_header_to_media_types(AcceptHead),
-    %% Prov1 = normalize_provided(Provided),
-    choose_media_type1(Provided, Requested).
+    Provided1 = normalize_provided(Provided),
+    choose_media_type1(Provided1, Requested).
 
 
 %% Choose media type to accept an incoming request.
 choose_content_type(_, []) ->
     none;
-choose_content_type({MediaType, _Params}=ContentType, [ {MediaTypeHead, _ParamsHead}=O | T]) ->
+choose_content_type({MediaType, _Params}=ContentType, [ {MediaTypeHead, _ParamsHead} | T]) ->
     case media_type_match(MediaTypeHead, MediaType) of
         false -> choose_content_type(ContentType, T);
         true -> MediaTypeHead
@@ -320,20 +320,6 @@ build_conneg_list([Acc|AccRest], Result) ->
     end,
     build_conneg_list(AccRest,[Pair|Result]).
 
-
-quoted_string([$" | _Rest] = Str) ->
-    Str;
-quoted_string(Str) ->
-    escape_quotes(Str, [$"]).                % Initialize Acc with opening quote
-
-escape_quotes([], Acc) ->
-    lists:reverse([$" | Acc]);               % Append final quote
-escape_quotes([$\\, Char | Rest], Acc) ->
-    escape_quotes(Rest, [Char, $\\ | Acc]);  % Any quoted char should be skipped
-escape_quotes([$" | Rest], Acc) ->
-    escape_quotes(Rest, [$", $\\ | Acc]);    % Unquoted quotes should be escaped
-escape_quotes([Char | Rest], Acc) ->
-    escape_quotes(Rest, [Char | Acc]).
 
 split_quoted_strings(Str) ->
     split_quoted_strings(Str, []).
@@ -566,8 +552,7 @@ select_content_type_test() ->
     Provided = [{<<"*/*">>, accept_all}],
 
     %% 
-    ?assertEqual({<<"*/*">>, accept_all}, 
-        select_content_type([{<<"*/*">>, accept_all}], ContentType)),
+    ?assertEqual({<<"*/*">>, accept_all}, select_content_type(Provided, ContentType)),
 
     ok.
 
